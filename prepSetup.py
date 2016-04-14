@@ -1,7 +1,7 @@
 import os
 import sys
 
-files = ['config.conf']
+files = ['README.md', 'README.txt']
 folders = ['data', 'examples', 'buildEnv']
 
 
@@ -15,20 +15,8 @@ def delFolder(path):
 				os.remove(os.path.join(path, i))
 
 os.chdir('micropi')
-#for i in os.listdir('logs'):
-	#if not os.path.isdir('logs/%s' % i):
-		#os.remove('logs/%s' % i)
 
 delFolder('buildEnv/build')
-
-#open('config.conf', 'w').write("""darkHighlight: (50 , 130, 50 ),
-#quickstart: False
-#mbitLocation: "/media/MICROBIT"
-#lightbgColour: (36, 36, 36)
-#theme: "darkgreen"
-#highlightColour: (73 , 182, 73 )
-#backgroundColour: (36, 36, 36)
-#""")
 
 data = []
 for i in folders:
@@ -40,8 +28,6 @@ dd = []
 for i in data:
 	dd += i[1]
 dd += files
-
-#open('files.txt', 'w').write('\n'.join(dd))
 
 argv = []
 for i in sys.argv:
@@ -66,12 +52,6 @@ setup(name='MicroPi',
 	  author_email='bottersnike237@gmail.com',
 	  url='http://github.com',
 	  scripts=['micro-pi'],
-	  long_description=\"\"\"Micro:Pi is an IDE written in pure python for
-programming the BBC Micro:Bit using C++. It is designed to run on a
-Raspberry Pi (hence the name) but should run on any os that has pygame
-installed.
-
-Micro:Pi is not affiliated with the BBC in any way.\"\"\",
 	  packages=['micropi'],
 	  package_dir={'micropi': 'micropi'},
 	  package_data={'micropi': %s},
