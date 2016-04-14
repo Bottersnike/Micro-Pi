@@ -1,0 +1,46 @@
+{
+  "name": "bbc-microbit-classic-gcc",
+  "version": "0.2.0",
+  "description": "Official mbed build target for the mbed nrf51822 development board, using the armgcc toolchain.",
+  "licenses": [
+    {
+      "url": "https://spdx.org/licenses/Apache-2.0",
+      "type": "Apache-2.0"
+    }
+  ],
+  "inherits": {
+    "mbed-gcc": "0.1.3"
+  },
+  "keywords": [
+    "mbed-target:nrf51822",
+    "mbed-official",
+    "nrf51822",
+    "nordic",
+    "gcc"
+  ],
+  "config": {},
+  "similarTo": [
+    "nrf51822",
+    "nrf",
+    "nordic",
+    "cortex-m0",
+    "armv6-m",
+    "mbed-classic",
+    "microbit"
+  ],
+  "toolchain": "CMake/toolchain.cmake",
+  "scripts": {
+    "debug": [
+      "valinor",
+      "--target",
+      "NRF51822",
+      "$program"
+    ],
+    "test": [
+      "mbed_test_wrapper",
+      "--target",
+      "NRF51822",
+      "$program"
+    ]
+  }
+}
