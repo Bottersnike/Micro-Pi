@@ -100,11 +100,12 @@ fileExtention: "mpi\""""
 
     t = time.localtime()
     val = '%d-%d-%d-%d' % (t.tm_hour, t.tm_wday, t.tm_mon, t.tm_year)
-    if not os.path.exists("logs"):
-        os.mkdir("logs")
+    LOGDIR = os.path.join(HOMEDIR, '.micropi', 'logs')
+    if not os.path.exists(LOGDIR):
+        os.mkdir(LOGDIR)
     logging.basicConfig(
         level=logging.DEBUG,
-        filename="logs/%s.log" % val,
+        filename="%s/%s.log" % (LOGDIR, val),
         format="[%(levelname)s][%(relativeCreated)d] %(message)s"
     )
 

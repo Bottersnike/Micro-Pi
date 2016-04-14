@@ -30,46 +30,33 @@ simple. Open up a terminal and type the following::
     sudo apt-get install srecord cmake ninja-build
     sudo pip install micropi
 
-Then to start it simple type :code:`sudo micro-pi`
+Then to start it simple type ``sudo micro-pi``
 into a terminal window.
 On other platforms, you may need
 to download and install cmake, ninja-build and
 srecord manually, but Micro:Pi can still be installed
 with pip. On Windows (also posiably mac) you need to
-run :code:`python -m micropi` to start it. If pip is
+run ``python -m micropi`` to start it. If pip is
 unavaliable, you can download the .zip file from
-the `PyPi Warehouse <http://warehouse.python.org/project/MicroPi`_, extract
-it, then run :code:`python setup.py install`
+the `PyPi Warehouse <http://warehouse.python.org/project/MicroPi>`_, extract
+it, then run ``python setup.py install``
 
 ========
 Features
 ========
-* In the top left corner are 4 triangles that indicate the statud of you
-    Micro:Bit. You highligh colour to say it's plugged in. Orange if
-    it's uploading, and red is if Micro:Pi can't find you Micro:Bit.
-* Just underneath the 4 triangles, is your tab view. This allows you to
-    create multiple files in your project.
-* On the far right are 4 icons. From left to right they are, build,
-    build and upload, toggle console and menu.
-* The menu can be shown by clicking the menu icon and in it you have the
-    option to do things like save, load and quit, but there are also
-    some things like "import file" which allows you to add a file to
-    your workspace and "reset build" which resets the enviroment in
-    which Micro:Pi creates your finished code.
-* If you hover over "Examples" a submenu appears from which you can
-    chose pre-made examples to help you get started.
-* If you click on settings from the menu, you will be greeted with the
-    screen show in the screen shot and the options are as follows:
+* In the top left corner are 4 triangles that indicate the status of your Micro:Bit. You highligh colour to say it's plugged in. Orange if it's uploading, and red is if Micro:Pi can't find you Micro:Bit.
+* Just underneath the 4 triangles, is your tab view. This allows you to create multiple files in your project.
+* On the far right are 4 icons. From left to right they are, build, build and upload, toggle console and menu.
+* The menu can be shown by clicking the menu icon and in it you have the option to do things like save, load and quit, but there are also some things like "import file" which allows you to add a file to your workspace and "reset build" which resets the enviroment in which Micro:Pi creates your finished code.
+* If you hover over "Examples" a submenu appears from which you can chose pre-made examples to help you get started.
+* If you click on settings from the menu, you will be greeted with the screen show in the screen shot and the options are as follows:
 
   * Quick Start:  This toggles whether to reset the build enviroment every time you start Micro:Pi. It is reccomended to put this on and just use "Rest Build" from the menu if you need to.
   * Micro:Bit Location:  This is where Micro:Pi tries to find your Micro:Bit. On windows change it to something like "E:\" or whatevery your Micro:Bit's drive letter is. (Use the arrow keys to move the cursor)
   * Theme:  Use the round buttons to select your chosen theme.
 
-* The large white box in the top half of the screen is your text editor.
-    This is where you write your code to put on your Micro:Bit
-* Just under that, if you have the console toggled on, is the console.
-    Here you will see status on how your build is doing and any errors
-    in your code.
+* The large white box in the top half of the screen is your text editor. This is where you write your code to put on your Micro:Bit
+* Just under that, if you have the console toggled on, is the console. Here you will see status on how your build is doing and any errors in your code.
 
 ==========
 Contribute
@@ -85,7 +72,7 @@ to put in the time. In fact, if you really wanted you could
 help with the code because things like dragging to select
 text, copy/paste, Xscroll aren't yet implemented. You can
 find the source code either at `http://github.com/Bottersnike/MicroPi <http://github.com/Bottersnike/Micro-Pi>`_
-or by downloading the zip from `http://warehouse.python.org/project/MicroPi <http://warehouse.python.org/project/MicroPi`_. If you
+or by downloading the zip from `http://warehouse.python.org/project/MicroPi <http://warehouse.python.org/project/MicroPi>`_. If you
 have created something, you can email it to me at
 `bottersnike237@gmail.com <mailto:bottersnike237@gmail.com>`_
 

@@ -46,7 +46,7 @@ for scheme in INSTALL_SCHEMES.values():
 	scheme['data'] = scheme['purelib']
 
 setup(name='MicroPi',
-	  version='0.2',
+	  version='0.3.4',
 	  description='A Micro:Bit IDE',
 	  author='Nathan Taylor',
 	  author_email='bottersnike237@gmail.com',
@@ -56,7 +56,8 @@ setup(name='MicroPi',
 	  package_dir={'micropi': 'micropi'},
 	  package_data={'micropi': %s},
 	  requires=['pygame', 'yotta'],
-	  provides=['micropi']
+	  provides=['micropi'],
+      long_description=open("README.txt").read()
 	 )
 """ % str(dd)
 open('setup.py', 'w').write(setupScript)
