@@ -1,0 +1,16 @@
+{
+  "name": "microbit",
+  "version": "0.0.2",
+  "description": "The micro:bit runtime, building with yotta",
+  "licenses": [
+    {
+      "url": "https://spdx.org/licenses/Apache-2.0",
+      "type": "Apache-2.0"
+    }
+  ],
+  "dependencies": {
+    "microbit-dal": "lancaster-university/microbit-dal"
+  },
+  "targetDependencies": {},
+  "bin": "./source"
+}

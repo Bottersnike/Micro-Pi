@@ -1,0 +1,7 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aS'#include "MicroBit.h"\n\nvoid app_main()\n{\n\twhile (1)\n\t{\n\t\tif (uBit.buttonB.isPressed()){\n\t\t\tuBit.display.print(\'B\');\n\t\t} else if (uBit.buttonA.isPressed()){\n\t\t\tuBit.display.print(\'A\');\n\t\t} else {\n\t\t\tuBit.display.clear();\n\t\t}\n\t\tuBit.sleep(100);\n\t}\n}\n'
+p3
+aa.

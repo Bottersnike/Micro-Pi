@@ -1,0 +1,12 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aS'#include "MicroBit.h"\n#include "header.h"\n\nvoid app_main()\n{\n\twhile (1)\n\t{\n\t\tuBit.display.scroll(message);\n\t\tuBit.sleep(100);\n\t}\n}\n'
+p3
+aa(lp4
+S'header.h'
+p5
+aV#define message "Hello World"\u000a
+p6
+aa.
