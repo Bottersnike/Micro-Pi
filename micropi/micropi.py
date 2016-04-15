@@ -1,71 +1,31 @@
+#  micropi.py
+#
+#  Copyright 2016  Nathan Taylor
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
 try:
+    import pygame
+    import random
+
     import os
-    import sys
-
-    WINDOWS = os.name == 'nt'
-
-
-    def copyDir(path, newPath):
-        os.mkdir(newPath)
-        for i in os.listdir(path):
-            sys.stdout.write(os.path.join(path, i) + '\n')
-            if os.path.isdir(os.path.join(path, i)):
-                copyDir(os.path.join(path, i), os.path.join(newPath, i))
-            else:
-                d = open(os.path.join(path, i)).read()
-                open(os.path.join(newPath, i), 'w').write(d)
-
-    HOMEDIR = os.path.expanduser('~')
 
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-    if not os.path.exists(os.path.join(HOMEDIR, '.micropi')):
-        os.mkdir(os.path.join(HOMEDIR, '.micropi'))
-
-    defualtConfig = """darkHighlight: (50, 130, 50)
-quickstart: %s
-mbitLocation: "%s"
-lightbgColour: (36, 36, 36)
-theme: "darkgreen"
-highlightColour: (73, 182, 73)
-backgroundColour: (36, 36, 36)
-fileExtention: "mpi\""""
-    if not os.path.exists(os.path.join(HOMEDIR, '.micropi', 'config.conf')):
-        try:
-            import tkinter as tk
-            import tkinter.messagebox as msgbox
-            import tkinter.simpledialog as simpd
-        except ImportError:
-            import Tkinter as tk
-            import tkMessageBox as msgbox
-            import tkSimpleDialog as simpd
-        root = tk.Tk()
-        root.withdraw()
-        res = msgbox.askyesno("Settings", "Enable Quick Start?")
-        res2 = simpd.askstring("Settings", "Micro:Bit Location")
-        if not res2:
-            res2 = "/media/MICROBIT"
-        root.destroy()
-        print("Creating Config")
-        open(os.path.join(HOMEDIR, '.micropi', 'config.conf'),
-             'w').write(defualtConfig % (str(res), res2))
-    configLocation = os.path.join(HOMEDIR, '.micropi', 'config.conf')
-
-    if not os.path.exists(os.path.join(HOMEDIR, '.micropi', 'buildEnv')):
-        print("Installing Build Enviroment")
-        copyDir('buildEnv', os.path.join(HOMEDIR, '.micropi', 'buildEnv'))
-    buildLocation = os.path.join(HOMEDIR, '.micropi', 'buildEnv')
-
-    SETTINGS = {}
-    d = open(configLocation).read().split('\n')
-    for i in d:
-        i2 = i.split(':')
-        if i:
-            SETTINGS[i[:len(i2[0])]] = eval(i[len(i2[0]) + 1:])
-
-    import pygame
-    import random
-    import os
     import pygame.gfxdraw as gfx
     import sys
     import time
@@ -84,6 +44,20 @@ fileExtention: "mpi\""""
 
     from subprocess import PIPE, Popen
 
+    try:
+        import tkinter as tk
+        import tkinter.messagebox as msgbox
+        import tkinter.simpledialog as simpd
+    except ImportError:
+        import Tkinter as tk
+        import tkMessageBox as msgbox
+        import tkSimpleDialog as simpd
+
+    import buildenv
+    import tarfile
+    import tempfile
+    import base64
+
     s = pygame.image.load('data/icon.png')
     pygame.display.set_icon(s)
 
@@ -97,10 +71,114 @@ fileExtention: "mpi\""""
     screen.blit(img, (0, 0))
     pygame.display.flip()
     pygame.display.set_caption('Micro:Pi', 'Micro:Pi')
+    pygame.event.get()
+
+    #screen.blit(img, (0, 0))
+    #t = font.render(d2[:-1], 1, (73, 182, 73))
+    #screen.blit(t, (0, img.get_height() - t.get_height()))
+    #pygame.display.flip()
+
+    font = pygame.font.Font('data/Monospace.ttf', 12)
+
+    HOMEDIR = os.path.expanduser('~')
+    MICROPIDIR = os.path.join(HOMEDIR, '.micropi')#-' + sys.version.split(' ')[0])
+
+    def delFolder(path):
+        if os.path.exists(path):
+            for i in os.listdir(path):
+                if os.path.isdir(os.path.join(path, i)):
+                    delFolder(os.path.join(path, i))
+                    os.rmdir(os.path.join(path, i))
+                else:
+                    os.remove(os.path.join(path, i))
+
+    FIRSTRUN = False
+
+    TABSIZE = 4
+
+    WINDOWS = os.name == 'nt'
+
+    def copyDir(path, newPath):
+        os.mkdir(newPath)
+        for i in os.listdir(path):
+            sys.stdout.write(os.path.join(path, i) + '\n')
+            if os.path.isdir(os.path.join(path, i)):
+                copyDir(os.path.join(path, i), os.path.join(newPath, i))
+            else:
+                d = open(os.path.join(path, i)).read()
+                open(os.path.join(newPath, i), 'w').write(d)
+
+    if not os.path.exists(MICROPIDIR):
+        os.mkdir(MICROPIDIR)
+
+    defualtConfig = """darkHighlight: (50, 130, 50)
+quickstart: %s
+mbitLocation: "%s"
+lightbgColour: (36, 36, 36)
+theme: "darkgreen"
+highlightColour: (73, 182, 73)
+backgroundColour: (36, 36, 36)
+fileExtention: "mpi\""""
+    if not os.path.exists(os.path.join(MICROPIDIR, 'config.conf')):
+
+        root = tk.Tk()
+        root.withdraw()
+        res = msgbox.askyesno("Settings", "Enable Quick Start?")
+        res2 = simpd.askstring("Settings", "Micro:Bit Location")
+        if not res2:
+            res2 = "/media/MICROBIT"
+        root.destroy()
+        print("Creating Config")
+
+        screen.blit(img, (0, 0))
+        t = font.render("Creating Config", 1, (73, 182, 73))
+        screen.blit(t, (0, img.get_height() - t.get_height()))
+        pygame.display.flip()
+        pygame.event.get()
+
+        open(os.path.join(MICROPIDIR, 'config.conf'),
+             'w').write(defualtConfig % (str(res), res2))
+    configLocation = os.path.join(MICROPIDIR, 'config.conf')
+
+    if not os.path.exists(os.path.join(HOMEDIR, 'Documents')):
+        os.mkdir(os.path.join(HOMEDIR, 'Documents'))
+    if not os.path.exists(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')):
+        os.mkdir(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects'))
+    SAVEDIR = os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')
+
+    if not os.path.exists(os.path.join(MICROPIDIR, 'buildEnv')):
+        FIRSTRUN = True
+        print("Installing Build Enviroment")
+
+        screen.blit(img, (0, 0))
+        t = font.render("Installing Build Enviroment", 1, (73, 182, 73))
+        screen.blit(t, (0, img.get_height() - t.get_height()))
+        pygame.display.flip()
+        pygame.event.get()
+
+        f = tempfile.mktemp()
+        try:
+            open(f, 'w').write(base64.b64decode(buildenv.benv.replace('\n', '')))
+        except:
+            __f = open(f, 'w')
+            __f.buffer.write(base64.b64decode(buildenv.benv.replace('\n', '')))
+            __f.close()
+        tf = tarfile.open(f, 'r:gz')
+        tf.extractall(MICROPIDIR)
+        os.remove(f)
+
+    buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
+
+    SETTINGS = {}
+    d = open(configLocation).read().split('\n')
+    for i in d:
+        i2 = i.split(':')
+        if i:
+            SETTINGS[i[:len(i2[0])]] = eval(i[len(i2[0]) + 1:])
 
     t = time.localtime()
     val = '%d-%d-%d-%d' % (t.tm_hour, t.tm_wday, t.tm_mon, t.tm_year)
-    LOGDIR = os.path.join(HOMEDIR, '.micropi', 'logs')
+    LOGDIR = os.path.join(MICROPIDIR, 'logs')
     if not os.path.exists(LOGDIR):
         os.mkdir(LOGDIR)
     logging.basicConfig(
@@ -112,7 +190,6 @@ fileExtention: "mpi\""""
     pipes = None
 
     fullscreen = False
-
 
     class NBSR:
         """
@@ -151,10 +228,8 @@ fileExtention: "mpi\""""
         def alive(self):
             return self._a
 
-
     class UnexpectedEndOfStream(BaseException):
         pass
-
 
     def askstring(prompt, command):
         global showTextDialog
@@ -168,7 +243,6 @@ fileExtention: "mpi\""""
         textDialogCursor = 0
         textDialogCommand = command
 
-
     def askyesno(question, command):
         global showQuery
         global queryCommand
@@ -177,13 +251,11 @@ fileExtention: "mpi\""""
         queryCommand = command
         queryQuestion = question
 
-
     def message(msg, icon="info"):
         global showMessage
         global messageContents
         showMessage = True
         messageContents = msg
-
 
     def split(string, sep):
         rtn = []
@@ -199,13 +271,11 @@ fileExtention: "mpi\""""
         # rtn.append('')
         return rtn
 
-
     def save():
         if saveLoc:
             data = pickle.dump(files, open(saveLoc, 'w'))
         else:
             saveas()
-
 
     def saveas():
         global showFileCreate
@@ -214,11 +284,10 @@ fileExtention: "mpi\""""
         global fileCreateSelected
         global fileCreateFunc
         showFileCreate = True
-        fileCreateDir = os.getcwd()
+        fileCreateDir = SAVEDIR
         fileCreateScrollY = 0
         fileCreateSelected = ''
         fileCreateFunc = create
-
 
     def saveFile(__file):
         global saveLoc
@@ -228,7 +297,6 @@ fileExtention: "mpi\""""
             path += '.%s' % SETTINGS["fileExtention"]
         saveLoc = path
         save()
-
 
     def load(location=None):
         global files
@@ -243,7 +311,6 @@ fileExtention: "mpi\""""
                     "error"
                 )
 
-
     def menuLoad():
         global showFileSelect
         global fileSelectDir
@@ -251,11 +318,13 @@ fileExtention: "mpi\""""
         global fileSelectScrollY
         global fileSelectSelected
         showFileSelect = True
-        fileSelectDir = os.getcwd()
+        fileSelectDir = SAVEDIR
         fileSelectScrollY = 0
         fileSelectSelected = ''
         fileSelectFunc = load
 
+    def nf():
+        askstring("New File Name:", newFile)
 
     def settings():
         global showSettings
@@ -266,31 +335,27 @@ fileExtention: "mpi\""""
         showSettings = not showSettings
         saveConfig()
 
-
     def rstbuild():
         delFolder(os.path.join(buildLocation, 'build'))
-
 
     def quit():
         pygame.quit()
         sys.exit(0)
 
-
     def about():
         message(aboutMessage)
-
 
     def example(path):
         global files, saveLoc
         try:
             saveLoc = ''
-            files = pickle.load(open('examples/%s' % path + '.%s' % SETTINGS["fileExtention"], 'rb'))
+            files = pickle.load(open('examples/%s' %
+                                     path + '.%s' % SETTINGS["fileExtention"], 'rb'))
         except KeyError:
             message(
                 "File does not apprear to be\na Micro:Pi save file",
                 "error"
             )
-
 
     def importFile():
         global showFileSelect
@@ -304,24 +369,19 @@ fileExtention: "mpi\""""
         fileSelectSelected = ''
         fileSelectFunc = addFile
 
-
     def addFile(path):
         d = open(path).read()
         files.append([path.split(os.path.sep)[-1], d])
 
-
     def newFile(name):
         files.append([name, '\n'])
-
 
     def create(null=None):
         pass
 
-
     def log(data):
         print(data)
         logging.debug(data)
-
 
     def delFolder(path):
         if os.path.exists(path):
@@ -332,19 +392,22 @@ fileExtention: "mpi\""""
                 else:
                     os.remove(os.path.join(path, i))
 
-
     def rstres():
         delFolder(os.path.join(buildLocation,
                                '/build/bbc-microbit-classic-gcc/source'))
 
-
     def startBuilding():
-        global pipes
+        global pipes, prevLoc, cscrollY
+        cscrollY = 0
+        delFolder(os.path.join(buildLocation,
+                               'build/bbc-microbit-classic-gcc/source/'))
         for f in files:
-            open(os.path.join(buildLocation, 'source/%s' % f[0]), 'w').write(f[1])
+            open(os.path.join(buildLocation, 'source/%s' %
+                              f[0]), 'w').write(f[1])
 
         prevLoc = os.getcwd()
         os.chdir(buildLocation)
+        os.environ['PWD'] = buildLocation
 
         if WINDOWS:
             p = Popen(
@@ -356,15 +419,13 @@ fileExtention: "mpi\""""
             )
         else:
             p = Popen(
-                ['yotta --plain build'],
+                ['cd %s; yotta --plain build' % buildLocation],
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
                 stdout=PIPE
             )
-        os.chdir(prevLoc)
         pipes = (p.stdin, NBSR(p.stdout), NBSR(p.stderr))
-
 
     def upload():
         end = open('%s/build/bbc-microbit-classic-gcc/source/\
@@ -373,7 +434,6 @@ microbit-combined.hex' % buildLocation).read()
             '%s/microbit-combined.hex' % SETTINGS['mbitLocation'],
             'w'
         ).write(end)
-
 
     def drawButon(surface, rect, colour, text, textCol):
         t = font2.render(text, 1, textCol)
@@ -424,7 +484,6 @@ microbit-combined.hex' % buildLocation).read()
             data += '%s: %s\n' % (str(i), p2)
         open(configLocation, 'w').write(data)
 
-
     def delopenfile(n):
         global currFile
         files.remove(files[n])
@@ -432,6 +491,16 @@ microbit-combined.hex' % buildLocation).read()
             currFile -= 1
         elif len(files) == 0:
             files.append(['main.cpp', '\n'])
+
+    def cscroll():
+        global cscrollY
+        lines = len(consoleText.split('\n'))
+        lineHeight = font.size(' ')[1]
+        lines *= lineHeight
+        consoleHeight = screen_size[1] - 10 - textBottom - lineHeight
+
+        if consoleHeight < lines + cscrollY:
+            cscrollY -= (lines + cscrollY) - consoleHeight
 
     log("Loading Fonts")
 
@@ -469,6 +538,12 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     log("Loading Icons")
 
+    screen.blit(img, (0, 0))
+    t = font.render("Loading Icons", 1, (73, 182, 73))
+    screen.blit(t, (0, img.get_height() - t.get_height()))
+    pygame.display.flip()
+    pygame.event.get()
+
     consoleGreenIcon = pygame.image.load('data/icons/consoleGreen.png')
     consoleBlueIcon = pygame.image.load('data/icons/consoleBlue.png')
     consoleRedIcon = pygame.image.load('data/icons/consoleRed.png')
@@ -494,6 +569,12 @@ Micro:Pi is not affiliated with the BBC in any way."""
     buildingIcon = pygame.image.load('data/icons/building.png')
 
     log("Generating Menus")
+
+    screen.blit(img, (0, 0))
+    t = font.render("Generating Menus", 1, (73, 182, 73))
+    screen.blit(t, (0, img.get_height() - t.get_height()))
+    pygame.display.flip()
+    pygame.event.get()
 
     exampleMenu = [(i[:-4] if i[-4:] == '.mpi' else i, example)
                    for i in os.listdir('examples')]
@@ -533,6 +614,12 @@ Micro:Pi is not affiliated with the BBC in any way."""
     }
 
     log("Setting Up Dialogs")
+
+    screen.blit(img, (0, 0))
+    t = font.render("Setting Up Dialogs", 1, (73, 182, 73))
+    screen.blit(t, (0, img.get_height() - t.get_height()))
+    pygame.display.flip()
+    pygame.event.get()
 
     cursor = True
     console = True
@@ -578,29 +665,71 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     renderedChars = {}
 
-    log("Prepering Yotta")
+    blank = [0] * len(pygame.key.get_pressed())
+    ctrlS = list(blank)
+    ctrlS[pygame.K_s] = 1
+    ctrlS[pygame.K_LCTRL] = 1
+    ctrlS2 = list(blank)
+    ctrlS2[pygame.K_s] = 1
+    ctrlS2[pygame.K_RCTRL] = 1
 
-    if not SETTINGS['quickstart']:
+    ctrlL = list(blank)
+    ctrlL[pygame.K_l] = 1
+    ctrlL[pygame.K_LCTRL] = 1
+    ctrlL2 = list(blank)
+    ctrlL2[pygame.K_l] = 1
+    ctrlL2[pygame.K_RCTRL] = 1
+
+    ctrlN = list(blank)
+    ctrlN[pygame.K_n] = 1
+    ctrlN[pygame.K_LCTRL] = 1
+    ctrlN2 = list(blank)
+    ctrlN2[pygame.K_n] = 1
+    ctrlN2[pygame.K_RCTRL] = 1
+
+    ctrlI = list(blank)
+    ctrlI[pygame.K_i] = 1
+    ctrlI[pygame.K_LCTRL] = 1
+    ctrlI2 = list(blank)
+    ctrlI2[pygame.K_i] = 1
+    ctrlI2[pygame.K_RCTRL] = 1
+
+    keyboardShortcuts = [(ctrlS, save), (ctrlS2, save),
+                         (ctrlL, menuLoad), (ctrlL2, menuLoad),
+                         (ctrlN, nf), (ctrlN2, nf),
+                         (ctrlI, importFile), (ctrlI2, importFile)]
+    lastKeys = blank
+
+    log("Preparing Yotta")
+
+    screen.blit(img, (0, 0))
+    t = font.render("Preparing Yotta", 1, (73, 182, 73))
+    screen.blit(t, (0, img.get_height() - t.get_height()))
+    pygame.display.flip()
+    pygame.event.get()
+
+    if not SETTINGS['quickstart'] or FIRSTRUN:
         rstbuild()
     prevLoc = os.getcwd()
     os.chdir(buildLocation)
+    os.environ['PWD'] = buildLocation
     os.system('yotta target bbc-microbit-classic-gcc')
-    if not SETTINGS['quickstart']:
+    if not SETTINGS['quickstart'] or FIRSTRUN:
         _file = """#include "MicroBit.h"
 
 void app_main()
 {
-    while (1)
-    {
-        uBit.sleep(100);
-    }
+while (1)
+{
+    uBit.sleep(100);
+}
 }
 """
 
         open('source/main.cpp', 'w').write(_file)
         if WINDOWS:
             p = Popen(
-                ['yotta', 'build --plain'],
+                ['yotta', '--plain build'],
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
@@ -608,7 +737,7 @@ void app_main()
             )
         else:
             p = Popen(
-                ['yotta build --plain'],
+                ['cd %s; yotta --plain build' % buildLocation],
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
@@ -639,12 +768,19 @@ void app_main()
                 t = font.render(d2[:-1], 1, (73, 182, 73))
                 screen.blit(t, (0, img.get_height() - t.get_height()))
             pygame.display.flip()
+            pygame.event.get()
 
             if not (pipes[1].alive()) or (not pipes[2].alive()):
                 pipes = None
     os.chdir(prevLoc)
 
     log("Starting Micro:Pi")
+
+    screen.blit(img, (0, 0))
+    t = font.render("Staring Micro:Pi", 1, (73, 182, 73))
+    screen.blit(t, (0, img.get_height() - t.get_height()))
+    pygame.display.flip()
+    pygame.event.get()
 
     screen = pygame.display.set_mode((750, 500), pygame.RESIZABLE)
     screen_size = screen.get_size()
@@ -654,6 +790,20 @@ void app_main()
     os.environ.pop('SDL_VIDEO_CENTERED')
 
     while True:
+
+        for n, null in enumerate(files):
+            files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
+            files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
+
+        processKeys = True
+        keys = pygame.key.get_pressed()
+        if keys != lastKeys:
+            for ks in keyboardShortcuts:
+                if list(ks[0]) == list(keys):
+                    ks[1]()
+                    processKeys = False
+        lastKeys = keys
+
         pygame.display.set_caption(
             "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0]),
             "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0])
@@ -690,16 +840,25 @@ void app_main()
 
             d1 = '\n'.join([d1[i:i + cwcs] for i in range(0, len(d1), cwcs)])
             d2 = '\n'.join([d2[i:i + cwcs] for i in range(0, len(d2), cwcs)])
+            if d1:
+                for l in d1.split('\n')[:-1]:
+                    cscroll()
+            if d2:
+                for l in d2.split('\n')[:-1]:
+                    cscroll()
             consoleText += d1 + d2
 
             if not (pipes[1].alive()) or (not pipes[2].alive()):
                 pipes = None
                 mbedBuilding = False
+                os.chdir(prevLoc)
                 if os.path.exists('%s/build/bbc-microbit-classic-gcc\
 /source/microbit-combined.hex' % buildLocation):
                     consoleText += "Done!\n"
+                    cscroll()
                     if mbedUploading and mbitFound:
                         consoleText += "Uploading!\n"
+                        cscroll()
                         mbitUploading = True
                         thread.start_new_thread(upload, ())
                     elif mbedUploading:
@@ -712,6 +871,9 @@ Check it is plugged in and Micro:Pi knows where to find it."""
                     consoleText += "An error has occured\n"
                     consoleText += "It is advised to look back to the last\
 line of compiling to find the error!\n"
+                    cscroll()
+                    cscroll()
+                    cscroll()
                     message("""There is an error
 with your code!
 It is advised to scroll
@@ -771,7 +933,7 @@ to find out what the error is!""", "error")
             fileRects.append(rect)
 
         lines = len(files[currFile][1].split('\n'))
-        digits = len(str(lines - 1))
+        digits = len(str(lines))
         hs = font.size('0')[0]
         sp = hs * digits + 5
         drawRect(
@@ -789,18 +951,18 @@ to find out what the error is!""", "error")
         p = 0
         for n, line in enumerate(files[currFile][1].split('\n')):
             if y < textBottom and y >= 100:
-                if str(n) not in renderedChars:
-                    ln = font.render(str(n), 1, (36, 36, 36))
-                    renderedChars[str(n)] = ln
+                if str(n + 1) not in renderedChars:
+                    ln = font.render(str(n + 1), 1, (36, 36, 36))
+                    renderedChars[str(n + 1)] = ln
                 else:
-                    ln = renderedChars[str(n)]
+                    ln = renderedChars[str(n + 1)]
                 screen.blit(ln, (5, y))
                 t = font.render(line, 1, SETTINGS['backgroundColour'])
 
                 x = sp + 5
                 for cn, c in enumerate(line + ' '):
                     if c == '	':
-                        c = '    '
+                        c = ' ' * TABSIZE
                     if cursor and p == cursorPos:
                         pygame.draw.line(
                             screen,
@@ -1177,7 +1339,10 @@ to find out what the error is!""", "error")
                 )
                 sbh = int(round(float(fsy) / filesRect.h))
 
-                k = float(filesRect.y) / (fsy - 26 * 15)
+                if (fsy - 26 * 15):
+                    k = float(filesRect.y) / (fsy - 26 * 15)
+                else:
+                    k = 0
                 sby = abs(k * fileSelectScrollY) + 1
 
                 drawRect(
@@ -1630,13 +1795,14 @@ to find out what the error is!""", "error")
                     screen.blit(mt, mr)
                     y += font2.get_height()
 
-        t = font.render(str(int(round(CLOCK.get_fps(), 0))) + "FPS", 1, (36, 36, 36))
+        t = font.render(str(int(round(CLOCK.get_fps(), 0))) +
+                        "FPS", 1, (36, 36, 36))
         screen.blit(t, (0, 0))
         pygame.display.flip()
         CLOCK.tick()
 
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN and processKeys:
                 if not showSettings and not showFileSelect and not showMessage and not showQuery and not showFileCreate and not showTextDialog:
                     if event.key == pygame.K_RIGHT:
                         cursor = True
@@ -1655,28 +1821,26 @@ to find out what the error is!""", "error")
                         p2 = cursorPos
                         cx = cy = 0
                         for n, line in enumerate(files[currFile][1].split('\n')):
-                            if y < textBottom and y >= 100:
-
-                                x = sp + 5
-                                for cn, c in enumerate(line + ' '):
-                                    if c == '	':
-                                        c = '    '
-                                    if cursor and p == cursorPos:
-                                        cy = n
-                                        cx = p2
-                                    if c not in renderedChars:
-                                        t = font.render(
-                                            c,
-                                            1,
-                                            SETTINGS['backgroundColour']
-                                        )
-                                        renderedChars[c] = t
-                                    else:
-                                        t = renderedChars[c]
-                                    screen.blit(t, (x, y))
-                                    x += t.get_width()
-                                    p += 1
-                                p2 -= len(line) + 1
+                            x = sp + 5
+                            for cn, c in enumerate(line + ' '):
+                                if c == '	':
+                                    c = ' ' * TABSIZE
+                                if cursor and p == cursorPos:
+                                    cy = n
+                                    cx = p2
+                                if c not in renderedChars:
+                                    t = font.render(
+                                        c,
+                                        1,
+                                        SETTINGS['backgroundColour']
+                                    )
+                                    renderedChars[c] = t
+                                else:
+                                    t = renderedChars[c]
+                                screen.blit(t, (x, y))
+                                x += t.get_width()
+                                p += 1
+                            p2 -= len(line) + 1
 
                             y += font.get_height()
                         if cy > 0:
@@ -1686,47 +1850,15 @@ to find out what the error is!""", "error")
                             p = 0
                             p2 = cursorPos
                             for n, line in enumerate(files[currFile][1].split('\n')):
-                                if y < textBottom and y >= 100:
-
-                                    x = sp + 5
-                                    for cn, c in enumerate(line + ' '):
-                                        if c == '	':
-                                            c = '    '
-                                        if cy == n:
-                                            if cx > len(line):
-                                                cx = len(line)
-                                            if cx == cn:
-                                                cursorPos = p
-                                        if c not in renderedChars:
-                                            t = font.render(
-                                                c, 1, SETTINGS['backgroundColour'])
-                                            renderedChars[c] = t
-                                        else:
-                                            t = renderedChars[c]
-                                        screen.blit(t, (x, y))
-                                        x += t.get_width()
-                                        p += 1
-                                    p2 -= len(line) + 1
-
-                                y += font.get_height()
-                    elif event.key == pygame.K_DOWN:
-                        cursor = True
-                        #cursorPos += 1
-
-                        y = 105 + scrollY
-                        p = 0
-                        p2 = cursorPos
-                        cx = cy = 0
-                        for n, line in enumerate(files[currFile][1].split('\n')):
-                            if y < textBottom and y >= 100:
-
                                 x = sp + 5
                                 for cn, c in enumerate(line + ' '):
                                     if c == '	':
-                                        c = '    '
-                                    if cursor and p == cursorPos:
-                                        cy = n
-                                        cx = p2
+                                        c = ' ' * TABSIZE
+                                    if cy == n:
+                                        if cx > len(line):
+                                            cx = len(line)
+                                        if cx == cn:
+                                            cursorPos = p
                                     if c not in renderedChars:
                                         t = font.render(
                                             c, 1, SETTINGS['backgroundColour'])
@@ -1738,6 +1870,34 @@ to find out what the error is!""", "error")
                                     p += 1
                                 p2 -= len(line) + 1
 
+                                y += font.get_height()
+                    elif event.key == pygame.K_DOWN:
+                        cursor = True
+                        #cursorPos += 1
+
+                        y = 105 + scrollY
+                        p = 0
+                        p2 = cursorPos
+                        cx = cy = 0
+                        for n, line in enumerate(files[currFile][1].split('\n')):
+                            x = sp + 5
+                            for cn, c in enumerate(line + ' '):
+                                if c == '	':
+                                    c = ' ' * TABSIZE
+                                if cursor and p == cursorPos:
+                                    cy = n
+                                    cx = p2
+                                if c not in renderedChars:
+                                    t = font.render(
+                                        c, 1, SETTINGS['backgroundColour'])
+                                    renderedChars[c] = t
+                                else:
+                                    t = renderedChars[c]
+                                screen.blit(t, (x, y))
+                                x += t.get_width()
+                                p += 1
+                            p2 -= len(line) + 1
+
                             y += font.get_height()
                         if cy < len(files[currFile][1].split('\n')):
                             cy += 1
@@ -1746,27 +1906,25 @@ to find out what the error is!""", "error")
                             p = 0
                             p2 = cursorPos
                             for n, line in enumerate(files[currFile][1].split('\n')):
-                                if y < textBottom and y >= 100:
-
-                                    x = sp + 5
-                                    for cn, c in enumerate(line + ' '):
-                                        if c == '	':
-                                            c = '    '
-                                        if cy == n:
-                                            if cx > len(line):
-                                                cx = len(line)
-                                            if cx == cn:
-                                                cursorPos = p
-                                        if c not in renderedChars:
-                                            t = font.render(
-                                                c, 1, SETTINGS['backgroundColour'])
-                                            renderedChars[c] = t
-                                        else:
-                                            t = renderedChars[c]
-                                        screen.blit(t, (x, y))
-                                        x += t.get_width()
-                                        p += 1
-                                    p2 -= len(line) + 1
+                                x = sp + 5
+                                for cn, c in enumerate(line + ' '):
+                                    if c == '	':
+                                        c = ' ' * TABSIZE
+                                    if cy == n:
+                                        if cx > len(line):
+                                            cx = len(line)
+                                        if cx == cn:
+                                            cursorPos = p
+                                    if c not in renderedChars:
+                                        t = font.render(
+                                            c, 1, SETTINGS['backgroundColour'])
+                                        renderedChars[c] = t
+                                    else:
+                                        t = renderedChars[c]
+                                    screen.blit(t, (x, y))
+                                    x += t.get_width()
+                                    p += 1
+                                p2 -= len(line) + 1
 
                                 y += font.get_height()
                     elif event.key == pygame.K_BACKSPACE:
@@ -1796,16 +1954,17 @@ to find out what the error is!""", "error")
                                 fullscreen = True
                             else:
                                 screen_size = sbf
-                                screen = pygame.display.set_mode(sbf, pygame.RESIZABLE)
+                                screen = pygame.display.set_mode(
+                                    sbf, pygame.RESIZABLE)
                                 fullscreen = False
-                    elif event.unicode in string.printable and event.unicode:
+                    elif event.unicode in string.printable[:-2] and event.unicode:
                         if event.unicode == '\r':
                             event.unicode = '\n'
                         cursor = True
                         t = files[currFile][1]
                         t = t[:cursorPos] + event.unicode + t[cursorPos:]
                         files[currFile][1] = t
-                        cursorPos += 1
+                        cursorPos += 1 if event.unicode != '\t' else TABSIZE
                 elif typinginSettings:
                     if event.key == pygame.K_LEFT:
                         if settingsCursor > 0:
@@ -1857,15 +2016,21 @@ to find out what the error is!""", "error")
                 if event.button == 5 and not showFileSelect and not showFileCreate:
                     if pygame.Rect(5, 105, screen_size[0] - 10, textBottom - 105).collidepoint(event.pos):
                         scrollY -= font.get_height() * 4
-                        if scrollY < 0 - (lines * font.get_height()) + screen_size[1] - screen_size[1] - 110:
-                            scrollY = 0 - (lines * font.get_height()) + \
-                                screen_size[1] - screen_size[1] - 110
+                        height = lines * font.size(' ')[1]
+                        maxDist = textBottom - 105 - height
+                        if scrollY < maxDist and height > textBottom - 105:
+                            scrollY = maxDist
+                        elif scrollY < maxDist:
+                            scrollY = 0
                     elif console and pygame.Rect(5, textBottom + 5, screen_size[0] - 10, screen_size[1] - 10 - textBottom).collidepoint(event.pos):
                         cscrollY -= font.get_height() * 4
-                        clines = len(consoleText.split('\n'))
-                        if cscrollY < 0 - (clines * font.get_height()) - screen_size[1] - textBottom:
-                            cscrollY = 0 - (clines * font.get_height()
-                                            ) - screen_size[1] - textBottom
+                        clines = len(consoleText.split('\n')) - 1
+                        height = clines * font.size(' ')[1]
+                        maxDist = (screen_size[1] - 10 - textBottom) - height
+                        if cscrollY < maxDist and height > (screen_size[1] - 10 - textBottom):
+                            cscrollY = maxDist - 10
+                        elif cscrollY < maxDist:
+                            cscrollY = 0
                 elif event.button == 4 and not showFileSelect and not showFileCreate:
                     if pygame.Rect(5, 105, screen_size[0] - 10, textBottom - 105).collidepoint(event.pos):
                         scrollY += font.get_height() * 4
@@ -2081,7 +2246,8 @@ to find out what the error is!""", "error")
                                 for n, f in enumerate(fileRects):
                                     if f.collidepoint(event.pos):
                                         if n == len(fileRects) - 1:
-                                            askstring("New File Name:", newFile)
+                                            askstring(
+                                                "New File Name:", newFile)
                                         else:
                                             r = pygame.Rect(f)
                                             nw = font2.size(' x ')[0]
@@ -2103,7 +2269,7 @@ to find out what the error is!""", "error")
                                         x = sp + 5
                                         for cn, c in enumerate(line + ' '):
                                             if c == '	':
-                                                c = '    '
+                                                c = ' ' * TABSIZE
                                             if c not in renderedChars:
                                                 t = font.render(
                                                     c, 1, SETTINGS['backgroundColour'])
@@ -2149,6 +2315,41 @@ to find out what the error is!""", "error")
                 sys.exit(0)
             elif event.type == 29:
                 cursor = not cursor
+
+        y = 105 + scrollY
+        p = 0
+        p2 = cursorPos
+        cx = cy = 0
+        for n, line in enumerate(files[currFile][1].split('\n')):
+            x = sp + 5
+            for cn, c in enumerate(line + ' '):
+                if c == '	':
+                    c = ' ' * TABSIZE
+                if p == cursorPos:
+                    cy = n
+                    cx = p2
+                if c not in renderedChars:
+                    t = font.render(
+                        c,
+                        1,
+                        SETTINGS['backgroundColour']
+                    )
+                    renderedChars[c] = t
+                else:
+                    t = renderedChars[c]
+                screen.blit(t, (x, y))
+                x += t.get_width()
+                p += 1
+            p2 -= len(line) + 1
+
+            y += font.get_height()
+
+        cursorY = cy * font.size(' ')[1]
+        if cursorY < abs(scrollY):
+            scrollY += abs(scrollY) - cursorY
+        if textBottom - 105 - font.size(' ')[1] < cursorY + scrollY:
+            scrollY -= (cursorY + scrollY) - \
+                (textBottom - 105 - font.size(' ')[1])
 except Exception as e:
     import traceback
     tb = traceback.format_exc()
@@ -2165,7 +2366,7 @@ except Exception as e:
     import pygame
     pygame.init()
     f = pygame.font.SysFont("monospace", 24)
-    func = lambda x:f.size(x)[0]
+    func = lambda x: f.size(x)[0]
     width = f.size(max(lines, key=func))[0]
     height = len(lines) * f.size('text')[1]
     d = pygame.display.set_mode((width, height), pygame.NOFRAME)

@@ -1,5 +1,3 @@
-recursive-include data *
-recursive-include buildEnv *
-recursive-include logs *
-recursive-include examples *
-include config.conf
+include README.txt
+include LICENSE
+include README.md
