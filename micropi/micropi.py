@@ -428,8 +428,7 @@ fileExtention: "mpi\""""
         pipes = (p.stdin, NBSR(p.stdout), NBSR(p.stderr))
 
     def upload():
-        end = open('%s/build/bbc-microbit-classic-gcc/source/\
-microbit-combined.hex' % buildLocation).read()
+        end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation).read()
         open(
             '%s/microbit-combined.hex' % SETTINGS['mbitLocation'],
             'w'
@@ -852,8 +851,7 @@ while (1)
                 pipes = None
                 mbedBuilding = False
                 os.chdir(prevLoc)
-                if os.path.exists('%s/build/bbc-microbit-classic-gcc\
-/source/microbit-combined.hex' % buildLocation):
+                if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
                     consoleText += "Done!\n"
                     cscroll()
                     if mbedUploading and mbitFound:
@@ -869,8 +867,7 @@ Micro:Bit not found!
 Check it is plugged in and Micro:Pi knows where to find it."""
                 else:
                     consoleText += "An error has occured\n"
-                    consoleText += "It is advised to look back to the last\
-line of compiling to find the error!\n"
+                    consoleText += "It is advised to look back to the last line of compiling to find the error!\n"
                     cscroll()
                     cscroll()
                     cscroll()
