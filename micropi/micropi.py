@@ -73,11 +73,6 @@ try:
     pygame.display.set_caption('Micro:Pi', 'Micro:Pi')
     pygame.event.get()
 
-    #screen.blit(img, (0, 0))
-    #t = font.render(d2[:-1], 1, (73, 182, 73))
-    #screen.blit(t, (0, img.get_height() - t.get_height()))
-    #pygame.display.flip()
-
     font = pygame.font.Font('data/Monospace.ttf', 12)
 
     HOMEDIR = os.path.expanduser('~')
@@ -268,7 +263,6 @@ fileExtention: "mpi\""""
         if curr:
             rtn += curr
             curr = ''
-        # rtn.append('')
         return rtn
 
     def save():
@@ -377,6 +371,7 @@ fileExtention: "mpi\""""
         files.append([name, '\n'])
 
     def create(null=None):
+        print "WUT!?"
         pass
 
     def log(data):
@@ -501,9 +496,58 @@ fileExtention: "mpi\""""
         if consoleHeight < lines + cscrollY:
             cscrollY -= (lines + cscrollY) - consoleHeight
 
+    def selectAll():
+        global dragging, dragStart, dragEnd
+        if not pygame.mouse.get_pressed()[0]:
+            dragging = True
+            dragStart = 0
+            dragEnd = len(files[currFile][1])
+
+    def menuRun():
+        askyesno("Are you sure you want to proceed?", 'askstring("Command:", aynrun)')
+
+    def aynrun(text=None):
+        if text:
+            exec(text, globals(), locals())
+
+    def menuBuild():
+        global mbedBuilding
+        global consoleText
+        global cscrollY
+        if (not mbedBuilding) and (not mbedUploading):
+            mbedBuilding = True
+            consoleText = ""
+            cscrollY = 0
+            rstres()
+            startBuilding()
+
+    def menuUaB():
+        global mbedUploading
+        global mbedBuilding
+        global consoleText
+        global cscrollY
+        if (not mbedBuilding) and (not mbedUploading):
+            mbedUploading = True
+            mbedBuilding = True
+            consoleText = ""
+            cscrollY = 0
+            rstres()
+            startBuilding()
+
+    def menuForceUpload():
+        global mbedUploading
+        global forceUpload
+        if (not mbedBuilding) and (not mbedUploading):
+            mbedUploading = True
+            forceUpload = True
+
+    def menuReset():
+        askyesno("Are you sure you want to reset your build?", rstbuild)
+
     log("Loading Fonts")
 
     font = pygame.font.Font('data/Monospace.ttf', 12)
+    fontMenu = pygame.font.Font('data/Roboto-Light.ttf', 14)
     font2 = pygame.font.Font('data/Roboto.ttf', 24)
     font3 = pygame.font.Font('data/Roboto.ttf', 48)
 
@@ -577,15 +621,22 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     exampleMenu = [(i[:-4] if i[-4:] == '.mpi' else i, example)
                    for i in os.listdir('examples')]
+    debugMenu = [('Run Command', menuRun)]
     menuData = [
         ('Save', save),
         ('Save As', saveas),
         ('Load', menuLoad),
         ('Import File', importFile),
         ('Examples', exampleMenu),
-        ('', lambda:0), ('About', about),
+        ('', lambda:0),
+        ('Build', menuBuild),
+        ('Build and Upload', menuUaB),
+        ('Force Upload', menuForceUpload),
+        ('', lambda:0),
+        ('About', about),
         ('Settings', settings),
-        ('Reset Build', rstbuild),
+        ('Reset Build', menuReset),
+        ('Debug', debugMenu),
         ('', lambda:0),
         ('Exit', quit)]
 
@@ -625,6 +676,7 @@ Micro:Pi is not affiliated with the BBC in any way."""
     menu = False
     showAbout = False
     showExampleMenu = False
+    showDebugMenu = False
     showSettings = False
     settingsRendered = False
     typinginSettings = False
@@ -645,7 +697,6 @@ Micro:Pi is not affiliated with the BBC in any way."""
     queryCommand = ''
     queryQuestion = ''
     queryRendered = False
-
     showTextDialog = False
     textDialogPrompt = ''
     textDialogText = ''
@@ -657,6 +708,11 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     mbedBuilding = False
     mbedUploading = False
+    forceUpload = False
+
+    dragStart = 0
+    dragging = False
+    dragEnd = 0
 
     fullScreenTick = 0
     fullScreenDelay = 100
@@ -693,10 +749,18 @@ Micro:Pi is not affiliated with the BBC in any way."""
     ctrlI2[pygame.K_i] = 1
     ctrlI2[pygame.K_RCTRL] = 1
 
+    ctrlA = list(blank)
+    ctrlA[pygame.K_a] = 1
+    ctrlA[pygame.K_LCTRL] = 1
+    ctrlA2 = list(blank)
+    ctrlA2[pygame.K_a] = 1
+    ctrlA2[pygame.K_RCTRL] = 1
+
     keyboardShortcuts = [(ctrlS, save), (ctrlS2, save),
                          (ctrlL, menuLoad), (ctrlL2, menuLoad),
                          (ctrlN, nf), (ctrlN2, nf),
-                         (ctrlI, importFile), (ctrlI2, importFile)]
+                         (ctrlI, importFile), (ctrlI2, importFile),
+                         (ctrlA, selectAll), (ctrlA2, selectAll)]
     lastKeys = blank
 
     log("Preparing Yotta")
@@ -789,6 +853,15 @@ while (1)
     os.environ.pop('SDL_VIDEO_CENTERED')
 
     while True:
+        if not pygame.mouse.get_pressed()[0] and dragStart == dragEnd:
+            dragging = False
+
+        if console:
+            textBottom = screen_size[1] / 3 * 2
+        else:
+            textBottom = screen_size[1] - 5
+
+        mousePos = pygame.mouse.get_pos()
 
         for n, null in enumerate(files):
             files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
@@ -862,9 +935,10 @@ while (1)
                     elif mbedUploading:
                         mbitUploading = False
                         mbedUploading = False
-                        consoleText += """Cannot upload!
+                        message("""Cannot upload!
 Micro:Bit not found!
-Check it is plugged in and Micro:Pi knows where to find it."""
+Check it is plugged in and
+Micro:Pi knows where to find it.""")
                 else:
                     consoleText += "An error has occured\n"
                     consoleText += "It is advised to look back to the last line of compiling to find the error!\n"
@@ -878,11 +952,27 @@ back through the console
 to find out what the error is!""", "error")
                     mbitUploading = False
                     mbedUploading = False
-
-        if console:
-            textBottom = screen_size[1] / 3 * 2
-        else:
-            textBottom = screen_size[1] - 5
+        elif forceUpload:
+            if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
+                if mbedUploading and mbitFound:
+                    consoleText += "Uploading!\n"
+                    cscroll()
+                    mbitUploading = True
+                    forceUpload = False
+                    thread.start_new_thread(upload, ())
+                elif mbedUploading:
+                    mbitUploading = False
+                    mbedUploading = False
+                    forceUpload = False
+                    message("""Cannot upload!
+Micro:Bit not found!
+Check it is plugged in and
+Micro:Pi knows where to find it.""")
+            else:
+                message("No build files found!")
+                mbitUploading = False
+                mbedUploading = False
+                forceUpload = False
 
         screen.fill(SETTINGS['backgroundColour'])
 
@@ -944,6 +1034,60 @@ to find out what the error is!""", "error")
             (5, 105, sp, textBottom - 105)
         )
 
+        hit = False
+        y = 105 + scrollY
+        p = 0
+        for n, line in enumerate(files[currFile][1].split('\n')):
+            if y < textBottom and y > 100 and not hit:
+                x = sp + 5
+                for cn, c in enumerate(line + ' '):
+                    if c == '	':
+                        c = ' ' * TABSIZE
+                    if c not in renderedChars:
+                        t = font.render(
+                            c, 1, SETTINGS['backgroundColour'])
+                        renderedChars[c] = t
+                    else:
+                        t = renderedChars[c]
+                    rect = t.get_rect()
+                    rect.x = x
+                    rect.y = y
+                    if rect.collidepoint(mousePos):
+                        hit = True
+                        currCursorPos = p
+                    x += t.get_width()
+                    p += 1
+            else:
+                for cn, c in enumerate(line + ' '):
+                    p += 1
+            y += font.get_height()
+        if not hit:
+            y = 105 + scrollY
+            p = 0
+            for n, line in enumerate(files[currFile][1].split('\n')):
+                p += len(line) + 1
+                if y < textBottom and y > 100:
+                    x = sp + 5
+                    t = font.render(line, 1, SETTINGS[
+                                    'backgroundColour'])
+                    rect = t.get_rect()
+                    rect.x = 0
+                    rect.y = y
+                    rect.w = screen_size[0]
+                    if rect.collidepoint(mousePos):
+                        hit = True
+                        currCursorPos = p - 1
+                y += font.get_height()
+        if not hit:
+            if mousePos[1] > y - 1:
+                currCursorPos = len(files[currFile][1])
+            else:
+                currCursorPos = 0
+
+        if dragging:
+            if pygame.mouse.get_pressed()[0]:
+                dragEnd = currCursorPos
+
         y = 105 + scrollY
         p = 0
         for n, line in enumerate(files[currFile][1].split('\n')):
@@ -972,6 +1116,9 @@ to find out what the error is!""", "error")
                         renderedChars[c] = t
                     else:
                         t = renderedChars[c]
+                    if dragging:
+                        if dragStart <= p < dragEnd or dragStart > p >= dragEnd:
+                            pygame.draw.rect(screen, (160, 160, 160), (x, y, t.get_width(), t.get_height()))
                     screen.blit(t, (x, y))
                     x += t.get_width()
                     p += 1
@@ -1028,9 +1175,9 @@ to find out what the error is!""", "error")
             screen.blit(uploadBlueIcon if not mbedUploading else uploadingIcon,
                         (screen_size[0] - 158, 2))
 
-        f = lambda x: font2.size(x[0])[0]
-        menuWidth = font2.size(max(menuData, key=f)[0])[0] * 2
-        menuHeight = len(menuData) * font2.get_height()
+        f = lambda x: fontMenu.size(x[0])[0]
+        menuWidth = fontMenu.size(max(menuData, key=f)[0])[0] * 2
+        menuHeight = len(menuData) * fontMenu.get_height()
         menuRect = pygame.Rect(
             screen_size[0] - menuWidth,
             55,
@@ -1739,16 +1886,17 @@ to find out what the error is!""", "error")
             drawRect(screen, (230, 230, 230), menuRect)
             y = menuRect.y
             showExampleMenu = False
+            showDebugMenu = False
             for mi in menuData:
-                mt = font2.render(mi[0], 1, SETTINGS['backgroundColour'])
+                mt = fontMenu.render(mi[0], 1, SETTINGS['backgroundColour'])
                 mr = mt.get_rect()
                 mr.x = menuRect.x
                 mr.y = y
                 mr.w = menuWidth
                 if mi[0] == "Examples":
                     exampleY = mr.y
-                    emenuWidth = font2.size(max(exampleMenu, key=f)[0])[0] * 2
-                    emenuHeight = len(exampleMenu) * font2.get_height()
+                    emenuWidth = fontMenu.size(max(exampleMenu, key=f)[0])[0] * 2
+                    emenuHeight = len(exampleMenu) * fontMenu.get_height()
                     emenuRect = pygame.Rect(
                         screen_size[0] - menuWidth -
                         emenuWidth,
@@ -1758,9 +1906,24 @@ to find out what the error is!""", "error")
                     )
                     if emenuRect.collidepoint(mp):
                         showExampleMenu = True
+                elif mi[0] == "Debug":
+                    debugY = mr.y
+                    dmenuWidth = fontMenu.size(max(debugMenu, key=f)[0])[0] * 2
+                    dmenuHeight = len(debugMenu) * fontMenu.get_height()
+                    dmenuRect = pygame.Rect(
+                        screen_size[0] - menuWidth -
+                        dmenuWidth,
+                        debugY,
+                        dmenuWidth,
+                        dmenuHeight
+                    )
+                    if dmenuRect.collidepoint(mp):
+                        showDebugMenu = True
                 if mr.collidepoint(mp) and mi[0]:
                     if mi[0] == "Examples":
                         showExampleMenu = True
+                    elif mi[0] == "Debug":
+                        showDebugMenu = True
                     mr2 = pygame.Rect(mr)
                     mr2.x += 1
                     mr2.y += 1
@@ -1768,12 +1931,12 @@ to find out what the error is!""", "error")
                     mr2.h -= 2
                     drawRect(screen, (210, 210, 210), mr2)
                 screen.blit(mt, mr)
-                y += font2.get_height()
+                y += fontMenu.get_height()
             if showExampleMenu:
                 drawRect(screen, (230, 230, 230), emenuRect)
                 y = exampleY
                 for mi in exampleMenu:
-                    mt = font2.render(
+                    mt = fontMenu.render(
                         mi[0],
                         1,
                         SETTINGS['backgroundColour']
@@ -1790,7 +1953,29 @@ to find out what the error is!""", "error")
                         mr2.h -= 2
                         drawRect(screen, (210, 210, 210), mr2)
                     screen.blit(mt, mr)
-                    y += font2.get_height()
+                    y += fontMenu.get_height()
+            if showDebugMenu:
+                drawRect(screen, (230, 230, 230), dmenuRect)
+                y = debugY
+                for mi in debugMenu:
+                    mt = fontMenu.render(
+                        mi[0],
+                        1,
+                        SETTINGS['backgroundColour']
+                    )
+                    mr = mt.get_rect()
+                    mr.x = dmenuRect.x
+                    mr.y = y
+                    mr.w = dmenuWidth
+                    if mr.collidepoint(mp) and mi[0]:
+                        mr2 = pygame.Rect(mr)
+                        mr2.x += 1
+                        mr2.y += 1
+                        mr2.w -= 2
+                        mr2.h -= 2
+                        drawRect(screen, (210, 210, 210), mr2)
+                    screen.blit(mt, mr)
+                    y += fontMenu.get_height()
 
         t = font.render(str(int(round(CLOCK.get_fps(), 0))) +
                         "FPS", 1, (36, 36, 36))
@@ -1803,15 +1988,23 @@ to find out what the error is!""", "error")
                 if not showSettings and not showFileSelect and not showMessage and not showQuery and not showFileCreate and not showTextDialog:
                     if event.key == pygame.K_RIGHT:
                         cursor = True
-                        if cursorPos < len(files[currFile][1]):
+                        if dragging:
+                            cursorPos = max([dragEnd, dragStart])
+                            dragging = False
+                        elif cursorPos < len(files[currFile][1]):
                             cursorPos += 1
                     elif event.key == pygame.K_LEFT:
                         cursor = True
-                        if cursorPos > 0:
+                        if dragging:
+                            cursorPos = min([dragEnd, dragStart])
+                            dragging = False
+                        elif cursorPos > 0:
                             cursorPos -= 1
                     elif event.key == pygame.K_UP:
                         cursor = True
-                        #cursorPos -= 1
+                        if dragging:
+                            cursorPos = min([dragEnd, dragStart])
+                            dragging = False
 
                         y = 105 + scrollY
                         p = 0
@@ -1870,7 +2063,9 @@ to find out what the error is!""", "error")
                                 y += font.get_height()
                     elif event.key == pygame.K_DOWN:
                         cursor = True
-                        #cursorPos += 1
+                        if dragging:
+                            cursorPos = max([dragEnd, dragStart])
+                            dragging = False
 
                         y = 105 + scrollY
                         p = 0
@@ -1926,17 +2121,43 @@ to find out what the error is!""", "error")
                                 y += font.get_height()
                     elif event.key == pygame.K_BACKSPACE:
                         cursor = True
-                        if cursorPos > 0:
-                            t = files[currFile][1]
-                            t = t[:cursorPos - 1] + t[cursorPos:]
-                            files[currFile][1] = t
-                            cursorPos -= 1
+                        mn = min([dragEnd, dragStart])
+                        mx = max([dragEnd, dragStart])
+                        if not dragging:
+                            if cursorPos > 0:
+                                t = files[currFile][1]
+                                t = t[:cursorPos - 1] + t[cursorPos:]
+                                files[currFile][1] = t
+                                cursorPos -= 1
+                        else:
+                            cursorPos = mx
+                            while cursorPos >= mn:
+                                t = files[currFile][1]
+                                t = t[:cursorPos] + t[cursorPos + 1:]
+                                files[currFile][1] = t
+                                cursorPos -= 1
+                            cursorPos += 1
+                            dragEnd = cursorPos
+                            dragStart = cursorPos
                     elif event.key == pygame.K_DELETE:
                         cursor = True
-                        if cursorPos < len(files[currFile][1]):
-                            t = files[currFile][1]
-                            t = t[:cursorPos] + t[cursorPos + 1:]
-                            files[currFile][1] = t
+                        if not dragging:
+                            if cursorPos < len(files[currFile][1]):
+                                t = files[currFile][1]
+                                t = t[:cursorPos] + t[cursorPos + 1:]
+                                files[currFile][1] = t
+                        else:
+                            mn = min([dragEnd, dragStart])
+                            mx = max([dragEnd, dragStart])
+                            mmn = mn
+                            while mn < mx:
+                                t = files[currFile][1]
+                                t = t[:mmn] + t[mmn + 1:]
+                                files[currFile][1] = t
+                                mn += 1
+                            dragEnd = mmn
+                            dragStart = mmn
+                            cursorPos = mmn
                     elif event.key == pygame.K_F11:
                         t = pygame.time.get_ticks()
                         if t - fullScreenTick >= fullScreenDelay:
@@ -1958,10 +2179,27 @@ to find out what the error is!""", "error")
                         if event.unicode == '\r':
                             event.unicode = '\n'
                         cursor = True
-                        t = files[currFile][1]
-                        t = t[:cursorPos] + event.unicode + t[cursorPos:]
-                        files[currFile][1] = t
-                        cursorPos += 1 if event.unicode != '\t' else TABSIZE
+                        if not dragging:
+                            t = files[currFile][1]
+                            t = t[:cursorPos] + event.unicode + t[cursorPos:]
+                            files[currFile][1] = t
+                            cursorPos += 1 if event.unicode != '\t' else TABSIZE
+                        else:
+                            mn = min([dragEnd, dragStart])
+                            mx = max([dragEnd, dragStart])
+                            mmn = mn
+                            while mn < mx:
+                                t = files[currFile][1]
+                                t = t[:mmn] + t[mmn + 1:]
+                                files[currFile][1] = t
+                                mn += 1
+                            dragEnd = mmn
+                            dragStart = mmn
+                            cursorPos = mmn
+                            t = files[currFile][1]
+                            t = t[:cursorPos] + event.unicode + t[cursorPos:]
+                            files[currFile][1] = t
+                            cursorPos += 1 if event.unicode != '\t' else TABSIZE
                 elif typinginSettings:
                     if event.key == pygame.K_LEFT:
                         if settingsCursor > 0:
@@ -2050,6 +2288,8 @@ to find out what the error is!""", "error")
                     if fileCreateScrollY < 0:
                         fileCreateScrollY += font.size(' ')[1]
                 elif event.button == 1:
+                    if dragging:
+                        dragging = False
                     if showMessage:
                         showMessage = False
                     else:
@@ -2064,11 +2304,11 @@ to find out what the error is!""", "error")
                                     mr.x = menuRect.x
                                     mr.y = y
                                     mr.w = menuWidth
-                                    mr.h = font2.size(mi[0])[1]
+                                    mr.h = fontMenu.size(mi[0])[1]
                                     if mr.collidepoint(event.pos):
                                         if type(mi[1]) != list:
                                             mi[1]()
-                                    y += font2.get_height()
+                                    y += fontMenu.get_height()
                             if menu and showExampleMenu:
                                 y = emenuRect.y
                                 for mi in exampleMenu:
@@ -2076,11 +2316,23 @@ to find out what the error is!""", "error")
                                     mr.x = emenuRect.x
                                     mr.y = y
                                     mr.w = emenuWidth
-                                    mr.h = font2.size(mi[0])[1]
+                                    mr.h = fontMenu.size(mi[0])[1]
                                     if mr.collidepoint(event.pos):
                                         if type(mi[1]) != list:
                                             mi[1](mi[0])
-                                    y += font2.get_height()
+                                    y += fontMenu.get_height()
+                            if menu and showDebugMenu:
+                                y = dmenuRect.y
+                                for mi in debugMenu:
+                                    mr = pygame.Rect(0, 0, 0, 0)
+                                    mr.x = dmenuRect.x
+                                    mr.y = y
+                                    mr.w = dmenuWidth
+                                    mr.h = fontMenu.size(mi[0])[1]
+                                    if mr.collidepoint(event.pos):
+                                        if type(mi[1]) != list:
+                                            mi[1]()
+                                    y += fontMenu.get_height()
                             menu = False
                             if pygame.Rect(screen_size[0] - 105, 2, 50, 50).collidepoint(event.pos):
                                 console = not console
@@ -2096,6 +2348,8 @@ to find out what the error is!""", "error")
                                 if (not mbedBuilding) and (not mbedUploading):
                                     mbedBuilding = True
                                     consoleText = ""
+                                    cscrollY = 0
+                                    rstres()
                                     startBuilding()
                             if showSettings and settingsRendered:
                                 if quickStartRect.collidepoint(event.pos):
@@ -2210,9 +2464,6 @@ to find out what the error is!""", "error")
                                                         fileCreateSelected = _file
                                                 else:
                                                     if fileCreateSelected != _file:
-                                                        #		showFileCreate = False
-                                                        #		#fileCreateFunc(os.path.join(fileCreateDir, _file))
-                                                        #	else:
                                                         fileCreateSelected = _file
                                         fcy += t.get_height()
                                 if fcOpenRect.collidepoint(event.pos):
@@ -2232,7 +2483,7 @@ to find out what the error is!""", "error")
                                     showQuery = False
                                 elif queryYesRect.collidepoint(event.pos):
                                     showQuery = False
-                                    exec(queryCommand, globals(), locals())
+                                    exec(queryCommand, globals(), globals())
                             elif showTextDialog and textDialogRendered:
                                 if textDialogCancelRect.collidepoint(event.pos):
                                     showTextDialog = False
@@ -2304,6 +2555,9 @@ to find out what the error is!""", "error")
                                                 cursorPos = p - 1
                                                 cursor = True
                                         y += font.get_height()
+                                if hit:
+                                    dragging = True
+                                    dragStart = cursorPos
             elif event.type == pygame.VIDEORESIZE:
                 screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                 screen_size = event.size
