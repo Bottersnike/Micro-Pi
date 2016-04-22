@@ -29,6 +29,7 @@ try:
     import pygame.gfxdraw as gfx
     import sys
     import time
+    import copy
     try:
         import thread
     except:
@@ -227,6 +228,7 @@ fileExtention: "mpi\""""
         pass
 
     def askstring(prompt, command):
+        if debug: addSideMessage('asksstring()')
         global showTextDialog
         global textDialogPrompt
         global textDialogText
@@ -239,6 +241,7 @@ fileExtention: "mpi\""""
         textDialogCommand = command
 
     def askyesno(question, command):
+        if debug: addSideMessage('askyesno()')
         global showQuery
         global queryCommand
         global queryQuestion
@@ -247,6 +250,7 @@ fileExtention: "mpi\""""
         queryQuestion = question
 
     def message(msg, icon="info"):
+        if debug: addSideMessage('message()')
         global showMessage
         global messageContents
         showMessage = True
@@ -266,12 +270,15 @@ fileExtention: "mpi\""""
         return rtn
 
     def save():
+        if debug: addSideMessage('save()')
         if saveLoc:
             data = pickle.dump(files, open(saveLoc, 'w'))
+            lastSaveFiles = copy.deepcopy(files)
         else:
             saveas()
 
     def saveas():
+        if debug: addSideMessage('saveas()')
         global showFileCreate
         global fileCreateDir
         global fileCreateScrollY
@@ -284,6 +291,7 @@ fileExtention: "mpi\""""
         fileCreateFunc = create
 
     def saveFile(__file):
+        if debug: addSideMessage('saveFile()')
         global saveLoc
         _dir = fileCreateDir
         path = os.path.join(_dir, __file)
@@ -293,12 +301,14 @@ fileExtention: "mpi\""""
         save()
 
     def load(location=None):
+        if debug: addSideMessage('load()')
         global files
         global saveLoc
         if location:
             try:
                 saveLoc = location
                 files = pickle.load(open(location, 'rb'))
+                lastSaveFiles = copy.deepcopy(files)
             except KeyError:
                 message(
                     "File does not apprear to be\na Micro:Pi save file",
@@ -306,6 +316,7 @@ fileExtention: "mpi\""""
                 )
 
     def menuLoad():
+        if debug: addSideMessage('menuLoad()')
         global showFileSelect
         global fileSelectDir
         global fileSelectFunc
@@ -318,9 +329,11 @@ fileExtention: "mpi\""""
         fileSelectFunc = load
 
     def nf():
+        if debug: addSideMessage('nf()')
         askstring("New File Name:", newFile)
 
     def settings():
+        if debug: addSideMessage('settings()')
         global showSettings
         global settingsCursor
         global typinginSettings
@@ -330,6 +343,7 @@ fileExtention: "mpi\""""
         saveConfig()
 
     def rstbuild():
+        if debug: addSideMessage('rstbuild()')
         delFolder(os.path.join(buildLocation, 'build'))
 
     def quit():
@@ -337,14 +351,17 @@ fileExtention: "mpi\""""
         sys.exit(0)
 
     def about():
+        if debug: addSideMessage('about()')
         message(aboutMessage)
 
     def example(path):
+        if debug: addSideMessage('example()')
         global files, saveLoc
         try:
             saveLoc = ''
             files = pickle.load(open('examples/%s' %
                                      path + '.%s' % SETTINGS["fileExtention"], 'rb'))
+            lastSaveFiles = copy.deepcopy(files)
         except KeyError:
             message(
                 "File does not apprear to be\na Micro:Pi save file",
@@ -352,6 +369,7 @@ fileExtention: "mpi\""""
             )
 
     def importFile():
+        if debug: addSideMessage('importFile()')
         global showFileSelect
         global fileSelectDir
         global fileSelectFunc
@@ -364,13 +382,16 @@ fileExtention: "mpi\""""
         fileSelectFunc = addFile
 
     def addFile(path):
+        if debug: addSideMessage('addFile()')
         d = open(path).read()
         files.append([path.split(os.path.sep)[-1], d])
 
     def newFile(name):
+        if debug: addSideMessage('newFile()')
         files.append([name, '\n'])
 
     def create(null=None):
+        if debug: addSideMessage('create()')
         print "WUT!?"
         pass
 
@@ -379,6 +400,7 @@ fileExtention: "mpi\""""
         logging.debug(data)
 
     def delFolder(path):
+        if debug: addSideMessage('delFolder()')
         if os.path.exists(path):
             for i in os.listdir(path):
                 if os.path.isdir(os.path.join(path, i)):
@@ -388,10 +410,12 @@ fileExtention: "mpi\""""
                     os.remove(os.path.join(path, i))
 
     def rstres():
+        if debug: addSideMessage('rstres()')
         delFolder(os.path.join(buildLocation,
                                '/build/bbc-microbit-classic-gcc/source'))
 
     def startBuilding():
+        if debug: addSideMessage('startBuilding()')
         global pipes, prevLoc, cscrollY
         cscrollY = 0
         delFolder(os.path.join(buildLocation,
@@ -423,6 +447,7 @@ fileExtention: "mpi\""""
         pipes = (p.stdin, NBSR(p.stdout), NBSR(p.stderr))
 
     def upload():
+        if debug: addSideMessage('upload()')
         end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation).read()
         open(
             '%s/microbit-combined.hex' % SETTINGS['mbitLocation'],
@@ -470,6 +495,7 @@ fileExtention: "mpi\""""
         pygame.draw.rect(screen, colour, r, w)
 
     def saveConfig():
+        if debug: addSideMessage('saveConfig()')
         data = ''
         for i in SETTINGS.keys():
             p2 = str(SETTINGS[i])
@@ -479,6 +505,7 @@ fileExtention: "mpi\""""
         open(configLocation, 'w').write(data)
 
     def delopenfile(n):
+        if debug: addSideMessage('delOpenFile()')
         global currFile
         files.remove(files[n])
         if n == len(fileRects) - 2 and n != 0:
@@ -487,6 +514,7 @@ fileExtention: "mpi\""""
             files.append(['main.cpp', '\n'])
 
     def cscroll():
+        if debug: addSideMessage('cscroll()')
         global cscrollY
         lines = len(consoleText.split('\n'))
         lineHeight = font.size(' ')[1]
@@ -497,6 +525,7 @@ fileExtention: "mpi\""""
             cscrollY -= (lines + cscrollY) - consoleHeight
 
     def selectAll():
+        if debug: addSideMessage('selectAll()')
         global dragging, dragStart, dragEnd
         if not pygame.mouse.get_pressed()[0]:
             dragging = True
@@ -504,13 +533,17 @@ fileExtention: "mpi\""""
             dragEnd = len(files[currFile][1])
 
     def menuRun():
+        if debug: addSideMessage('menuRun()')
         askyesno("Are you sure you want to proceed?", 'askstring("Command:", aynrun)')
 
     def aynrun(text=None):
+        if debug: addSideMessage('aynrun()')
         if text:
-            exec(text, globals(), locals())
+            global commandToExec
+            commandToExec = text
 
     def menuBuild():
+        if debug: addSideMessage('menuBuild()')
         global mbedBuilding
         global consoleText
         global cscrollY
@@ -522,6 +555,7 @@ fileExtention: "mpi\""""
             startBuilding()
 
     def menuUaB():
+        if debug: addSideMessage('menuUaB()')
         global mbedUploading
         global mbedBuilding
         global consoleText
@@ -535,6 +569,7 @@ fileExtention: "mpi\""""
             startBuilding()
 
     def menuForceUpload():
+        if debug: addSideMessage('menuForceUpload()')
         global mbedUploading
         global forceUpload
         if (not mbedBuilding) and (not mbedUploading):
@@ -542,7 +577,21 @@ fileExtention: "mpi\""""
             forceUpload = True
 
     def menuReset():
+        if debug: addSideMessage('menuReset()')
         askyesno("Are you sure you want to reset your build?", rstbuild)
+
+    def menuTogCons():
+        if debug: addSideMessage('menuTogCons()')
+        global console
+        console = not console
+
+    def menuToggleDebugMessages():
+        global debug
+        addSideMessage('menuToggleDebugMessages()')
+        debug = not debug
+
+    def addSideMessage(message):
+        sideMessages.insert(0, [message, 50])
 
     log("Loading Fonts")
 
@@ -560,6 +609,7 @@ void app_main()
 
 }
 """], ["header.h", "\n"]]
+    lastSaveFiles = copy.deepcopy(files)
     currFile = 0
 
     consoleText = ""
@@ -621,7 +671,9 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     exampleMenu = [(i[:-4] if i[-4:] == '.mpi' else i, example)
                    for i in os.listdir('examples')]
-    debugMenu = [('Run Command', menuRun)]
+    debugMenu = [
+                 ('Run Command', menuRun),
+                 ('Toggle Debug', menuToggleDebugMessages)]
     menuData = [
         ('Save', save),
         ('Save As', saveas),
@@ -632,6 +684,7 @@ Micro:Pi is not affiliated with the BBC in any way."""
         ('Build', menuBuild),
         ('Build and Upload', menuUaB),
         ('Force Upload', menuForceUpload),
+        ('Toggle Console', menuTogCons),
         ('', lambda:0),
         ('About', about),
         ('Settings', settings),
@@ -713,6 +766,8 @@ Micro:Pi is not affiliated with the BBC in any way."""
     dragStart = 0
     dragging = False
     dragEnd = 0
+
+    debug = False
 
     fullScreenTick = 0
     fullScreenDelay = 100
@@ -849,10 +904,22 @@ while (1)
     screen_size = screen.get_size()
     pygame.display.set_caption('Micro:Pi', 'Micro:Pi')
     pygame.time.set_timer(29, 1000)
+    pygame.time.set_timer(30, 100)
+
+    sideMessages = []
+
+    commandToExec = ''
 
     os.environ.pop('SDL_VIDEO_CENTERED')
 
     while True:
+        saved = lastSaveFiles == files
+        print files, lastSaveFiles
+
+        if commandToExec:
+            exec(commandToExec, globals(), locals())
+            commandToExec = ''
+
         if not pygame.mouse.get_pressed()[0] and dragStart == dragEnd:
             dragging = False
 
@@ -876,10 +943,16 @@ while (1)
                     processKeys = False
         lastKeys = keys
 
-        pygame.display.set_caption(
-            "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0]),
-            "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0])
-        )
+        if saved:
+            pygame.display.set_caption(
+                "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0]),
+                "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0])
+            )
+        else:
+            pygame.display.set_caption(
+                "Micro:Pi - %s - *%s" % (saveLoc, files[currFile][0]),
+                "Micro:Pi - %s - *%s" % (saveLoc, files[currFile][0])
+            )
         settingsRendered = False
         filesRendered = False
         queryRendered = False
@@ -912,12 +985,11 @@ while (1)
 
             d1 = '\n'.join([d1[i:i + cwcs] for i in range(0, len(d1), cwcs)])
             d2 = '\n'.join([d2[i:i + cwcs] for i in range(0, len(d2), cwcs)])
-            if d1:
-                for l in d1.split('\n')[:-1]:
-                    cscroll()
-            if d2:
-                for l in d2.split('\n')[:-1]:
-                    cscroll()
+            #if d1:
+            for l in d1.split('\n')[:-1]:
+                cscroll()
+            for l in d2.split('\n')[:-1]:
+                cscroll()
             consoleText += d1 + d2
 
             if not (pipes[1].alive()) or (not pipes[2].alive()):
@@ -1668,7 +1740,7 @@ Micro:Pi knows where to find it.""")
             f2 = lambda x: font2.size(x)[0]
             border = 2
             m = messageContents.split('\n')
-            w = font2.size(max(m, key=f2))[0]
+            w = max([font2.size(max(m, key=f2))[0], font2.size('Dismiss')[0] + border * 4])
             h = font2.size(m[0])[1] * (len(m) + 1) + border * 4
             x = (screen_size[0] - w) / 2
             y = (screen_size[1] - h) / 2
@@ -1959,7 +2031,7 @@ Micro:Pi knows where to find it.""")
                 y = debugY
                 for mi in debugMenu:
                     mt = fontMenu.render(
-                        mi[0],
+                        mi[0] + ('' if mi[0] != 'Toggle Debug' else ' (%s)' % str(debug)),
                         1,
                         SETTINGS['backgroundColour']
                     )
@@ -1976,6 +2048,39 @@ Micro:Pi knows where to find it.""")
                         drawRect(screen, (210, 210, 210), mr2)
                     screen.blit(mt, mr)
                     y += fontMenu.get_height()
+
+        if sideMessages:
+            ff = lambda i:i.get_width()
+            border = 2
+
+            startY = screen_size[1] - font2.get_height() / 2
+
+            for sideMessage in sideMessages:
+                smText = [font2.render(i, 1, SETTINGS['highlightColour']) for i in sideMessage[0].split('\n')]
+                smHeight = font2.get_height() * (len(smText) + 1)
+                smWidth = max(smText, key=ff).get_width() + font2.get_height()
+                smRect = pygame.Rect(screen_size[0] - smWidth,
+                                     startY - smHeight,
+                                     smWidth,
+                                     smHeight
+                                    )
+                startY -= smHeight + font2.get_height() / 2
+                smSurf = pygame.Surface((smRect.w, smRect.h))
+                smSurf.fill((20, 20, 20))
+                pygame.draw.rect(smSurf, (36, 36, 36), (border, border, smRect.w - border, smRect.h - border * 2))
+
+                y = smRect.y + font2.get_height() / 2
+                x = smRect.x + font2.get_height() / 2
+                y = font2.get_height() / 2
+                for i in smText:
+                    smSurf.blit(i, (font2.get_height() / 2, y))
+                    y += i.get_height()
+
+                if sideMessage[1] <= 10:
+                    smSurf.set_alpha(25.5 * sideMessage[1])
+
+                screen.blit(smSurf, smRect)
+
 
         t = font.render(str(int(round(CLOCK.get_fps(), 0))) +
                         "FPS", 1, (36, 36, 36))
@@ -2566,6 +2671,12 @@ Micro:Pi knows where to find it.""")
                 sys.exit(0)
             elif event.type == 29:
                 cursor = not cursor
+            elif event.type == 30:
+                if sideMessages:
+                    for n, m in enumerate(sideMessages):
+                        sideMessages[n][1] -= 1
+                        if sideMessages[n][1] == 0:
+                            sideMessages.remove(m)
 
         y = 105 + scrollY
         p = 0
