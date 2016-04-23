@@ -2144,7 +2144,6 @@ Micro:Pi knows where to find it.""")
                                         renderedChars[c] = t
                                     else:
                                         t = renderedChars[c]
-                                    screen.blit(t, (x, y))
                                     x += t.get_width()
                                     p += 1
                                 p2 -= len(line) + 1
@@ -2294,10 +2293,69 @@ Micro:Pi knows where to find it.""")
                                     fullscreen = False
                         elif event.key == pygame.K_RETURN:
                             k = '\n'
+
+                            lastLineTabs = 0
+                            cp = 0
+
+                            for n, line in enumerate(files[currFile][1].split('\n')):
+                                lastLineTabs = 0
+                                stillRunning = True
+                                bigLoop = True
+                                for c in line + ' ':
+                                    if cp == cursorPos:
+                                        stillRunning = False
+                                        bigLoop = False
+                                        break
+                                    if c == ' ' and stillRunning:
+                                        lastLineTabs += 1
+                                    else:
+                                        stillRunning = False
+                                    cp += 1
+                                if not bigLoop:
+                                    break
+
+                            if cursorPos > 0:
+                                if files[currFile][1][cursorPos - 1] == '{':
+                                    lastLineTabs += TABSIZE
+
+                            k = '\n' + (' ' * lastLineTabs)
+
+                            cursor = True
+                            if not dragging:
+                                t = files[currFile][1]
+                                t = t[:cursorPos] + k + t[cursorPos:]
+                                files[currFile][1] = t
+                                cursorPos += len(k)
+                            else:
+                                mn = min([dragEnd, dragStart])
+                                mx = max([dragEnd, dragStart])
+                                mmn = mn
+                                while mn < mx:
+                                    t = files[currFile][1]
+                                    t = t[:mmn] + t[mmn + 1:]
+                                    files[currFile][1] = t
+                                    mn += 1
+                                dragEnd = mmn
+                                dragStart = mmn
+                                cursorPos = mmn
+                                t = files[currFile][1]
+                                t = t[:cursorPos] + k + t[cursorPos:]
+                                files[currFile][1] = t
+                                cursorPos += len(k)
                         elif event.unicode in string.printable[:-2] and event.unicode:
                             if event.unicode == u'\r':
                                 event.unicode = u'\n'
                             cursor = True
+
+                            unindentDepth = 0
+                            if event.unicode == u'}':
+                                for i in range(1, TABSIZE + 1):
+                                    ncp = cursorPos - i
+                                    if ncp >= 0:
+                                        if files[currFile][1][ncp] == ' ':
+                                            unindentDepth += 1
+                                if unindentDepth == TABSIZE:
+                                    files[currFile][1] = files[currFile][1][:cursorPos - unindentDepth] + files[currFile][1][cursorPos:]
                             if not dragging:
                                 t = files[currFile][1]
                                 t = t[:cursorPos] + event.unicode + t[cursorPos:]
@@ -2319,6 +2377,8 @@ Micro:Pi knows where to find it.""")
                                 t = t[:cursorPos] + event.unicode + t[cursorPos:]
                                 files[currFile][1] = t
                                 cursorPos += 1 if event.unicode != '\t' else TABSIZE
+                            if unindentDepth == TABSIZE:
+                                cursorPos -= unindentDepth
                     elif typinginSettings:
                         if event.key == pygame.K_LEFT:
                             if settingsCursor > 0:
