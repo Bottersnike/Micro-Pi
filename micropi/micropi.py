@@ -271,6 +271,7 @@ fileExtention: "mpi\""""
 
     def save():
         if debug: addSideMessage('save()')
+        global lastSaveFiles
         if saveLoc:
             data = pickle.dump(files, open(saveLoc, 'w'))
             lastSaveFiles = copy.deepcopy(files)
@@ -302,6 +303,7 @@ fileExtention: "mpi\""""
 
     def load(location=None):
         if debug: addSideMessage('load()')
+        global lastSaveFiles
         global files
         global saveLoc
         if location:
@@ -593,6 +595,56 @@ fileExtention: "mpi\""""
     def addSideMessage(message):
         sideMessages.insert(0, [message, 50])
 
+    def copyText():
+        if debug: addSideMessage('copyText()')
+        global clipboard
+        if dragging and dragEnd != dragStart:
+            clipboard = ''
+
+            mx = max([dragEnd, dragStart])
+            mn = min([dragEnd, dragStart])
+
+            clipboard = files[currFile][1][mn:mx]
+
+            #y = 105 + scrollY
+            #p = 0
+            #for n, line in enumerate(files[currFile][1].split('\n')):
+                #if y < textBottom and y >= 100:
+                    #x = sp + 5
+                    #for cn, c in enumerate(line + ' '):
+                        #if c == '	':
+                            #c = ' ' * TABSIZE
+                        #if c not in renderedChars:
+                            #t = font.render(c, 1, (36, 36, 36))
+                            #renderedChars[c] = t
+                        #else:
+                            #t = renderedChars[c]
+                        #if dragging:
+                            #if dragStart <= p < dragEnd or dragStart > p >= dragEnd:
+                                #clipboard += c
+                        #x += t.get_width()
+                        #p += 1
+                #else:
+                    #for cn, c in enumerate(line + ' '):
+                        #p += 1
+#
+                #y += font.get_height()
+
+    def pasteText():
+        global cursorPos
+        global dragEnd
+        global dragStart
+        cursor = True
+        if not dragging:
+            t = files[currFile][1]
+            t = t[:cursorPos] + clipboard + t[cursorPos:]
+            files[currFile][1] = t
+            cursorPos += len(clipboard)
+        else:
+            mn = min([dragEnd, dragStart])
+            mx = max([dragEnd, dragStart])
+            files[currFile][1] = files[currFile][1][:mn] + clipboard + files[currFile][1][mx:]
+
     log("Loading Fonts")
 
     font = pygame.font.Font('data/Monospace.ttf', 12)
@@ -775,48 +827,12 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     renderedChars = {}
 
-    blank = [0] * len(pygame.key.get_pressed())
-    ctrlS = list(blank)
-    ctrlS[pygame.K_s] = 1
-    ctrlS[pygame.K_LCTRL] = 1
-    ctrlS2 = list(blank)
-    ctrlS2[pygame.K_s] = 1
-    ctrlS2[pygame.K_RCTRL] = 1
-
-    ctrlL = list(blank)
-    ctrlL[pygame.K_l] = 1
-    ctrlL[pygame.K_LCTRL] = 1
-    ctrlL2 = list(blank)
-    ctrlL2[pygame.K_l] = 1
-    ctrlL2[pygame.K_RCTRL] = 1
-
-    ctrlN = list(blank)
-    ctrlN[pygame.K_n] = 1
-    ctrlN[pygame.K_LCTRL] = 1
-    ctrlN2 = list(blank)
-    ctrlN2[pygame.K_n] = 1
-    ctrlN2[pygame.K_RCTRL] = 1
-
-    ctrlI = list(blank)
-    ctrlI[pygame.K_i] = 1
-    ctrlI[pygame.K_LCTRL] = 1
-    ctrlI2 = list(blank)
-    ctrlI2[pygame.K_i] = 1
-    ctrlI2[pygame.K_RCTRL] = 1
-
-    ctrlA = list(blank)
-    ctrlA[pygame.K_a] = 1
-    ctrlA[pygame.K_LCTRL] = 1
-    ctrlA2 = list(blank)
-    ctrlA2[pygame.K_a] = 1
-    ctrlA2[pygame.K_RCTRL] = 1
-
-    keyboardShortcuts = [(ctrlS, save), (ctrlS2, save),
-                         (ctrlL, menuLoad), (ctrlL2, menuLoad),
-                         (ctrlN, nf), (ctrlN2, nf),
-                         (ctrlI, importFile), (ctrlI2, importFile),
-                         (ctrlA, selectAll), (ctrlA2, selectAll)]
-    lastKeys = blank
+    keyboardShortcuts = [(u'\x13', save),
+                         (u'\x0c', menuLoad),
+                         (u'\x0e', nf),
+                         (u'\x01', selectAll),
+                         (u'\x03', copyText),
+                         (u'\x16', pasteText),]
 
     log("Preparing Yotta")
 
@@ -910,11 +926,12 @@ while (1)
 
     commandToExec = ''
 
+    clipboard = ''
+
     os.environ.pop('SDL_VIDEO_CENTERED')
 
     while True:
         saved = lastSaveFiles == files
-        print files, lastSaveFiles
 
         if commandToExec:
             exec(commandToExec, globals(), locals())
@@ -933,15 +950,6 @@ while (1)
         for n, null in enumerate(files):
             files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
             files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
-
-        processKeys = True
-        keys = pygame.key.get_pressed()
-        if keys != lastKeys:
-            for ks in keyboardShortcuts:
-                if list(ks[0]) == list(keys):
-                    ks[1]()
-                    processKeys = False
-        lastKeys = keys
 
         if saved:
             pygame.display.set_caption(
@@ -2089,71 +2097,105 @@ Micro:Pi knows where to find it.""")
         CLOCK.tick()
 
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and processKeys:
-                if not showSettings and not showFileSelect and not showMessage and not showQuery and not showFileCreate and not showTextDialog:
-                    if event.key == pygame.K_RIGHT:
-                        cursor = True
-                        if dragging:
-                            cursorPos = max([dragEnd, dragStart])
-                            dragging = False
-                        elif cursorPos < len(files[currFile][1]):
-                            cursorPos += 1
-                    elif event.key == pygame.K_LEFT:
-                        cursor = True
-                        if dragging:
-                            cursorPos = min([dragEnd, dragStart])
-                            dragging = False
-                        elif cursorPos > 0:
-                            cursorPos -= 1
-                    elif event.key == pygame.K_UP:
-                        cursor = True
-                        if dragging:
-                            cursorPos = min([dragEnd, dragStart])
-                            dragging = False
-
-                        y = 105 + scrollY
-                        p = 0
-                        p2 = cursorPos
-                        cx = cy = 0
-                        for n, line in enumerate(files[currFile][1].split('\n')):
-                            x = sp + 5
-                            for cn, c in enumerate(line + ' '):
-                                if c == '	':
-                                    c = ' ' * TABSIZE
-                                if cursor and p == cursorPos:
-                                    cy = n
-                                    cx = p2
-                                if c not in renderedChars:
-                                    t = font.render(
-                                        c,
-                                        1,
-                                        SETTINGS['backgroundColour']
-                                    )
-                                    renderedChars[c] = t
-                                else:
-                                    t = renderedChars[c]
-                                screen.blit(t, (x, y))
-                                x += t.get_width()
-                                p += 1
-                            p2 -= len(line) + 1
-
-                            y += font.get_height()
-                        if cy > 0:
-                            cy -= 1
+            if event.type == pygame.KEYDOWN:
+                for i in keyboardShortcuts:
+                    if i[0] == event.unicode:
+                        i[1]()
+                else:
+                    if not showSettings and not showFileSelect and not showMessage and not showQuery and not showFileCreate and not showTextDialog:
+                        if event.key == pygame.K_RIGHT:
+                            cursor = True
+                            if dragging:
+                                cursorPos = max([dragEnd, dragStart])
+                                dragging = False
+                            elif cursorPos < len(files[currFile][1]):
+                                cursorPos += 1
+                        elif event.key == pygame.K_LEFT:
+                            cursor = True
+                            if dragging:
+                                cursorPos = min([dragEnd, dragStart])
+                                dragging = False
+                            elif cursorPos > 0:
+                                cursorPos -= 1
+                        elif event.key == pygame.K_UP:
+                            cursor = True
+                            if dragging:
+                                cursorPos = min([dragEnd, dragStart])
+                                dragging = False
 
                             y = 105 + scrollY
                             p = 0
                             p2 = cursorPos
+                            cx = cy = 0
                             for n, line in enumerate(files[currFile][1].split('\n')):
                                 x = sp + 5
                                 for cn, c in enumerate(line + ' '):
                                     if c == '	':
                                         c = ' ' * TABSIZE
-                                    if cy == n:
-                                        if cx > len(line):
-                                            cx = len(line)
-                                        if cx == cn:
-                                            cursorPos = p
+                                    if cursor and p == cursorPos:
+                                        cy = n
+                                        cx = p2
+                                    if c not in renderedChars:
+                                        t = font.render(
+                                            c,
+                                            1,
+                                            SETTINGS['backgroundColour']
+                                        )
+                                        renderedChars[c] = t
+                                    else:
+                                        t = renderedChars[c]
+                                    screen.blit(t, (x, y))
+                                    x += t.get_width()
+                                    p += 1
+                                p2 -= len(line) + 1
+
+                                y += font.get_height()
+                            if cy > 0:
+                                cy -= 1
+
+                                y = 105 + scrollY
+                                p = 0
+                                p2 = cursorPos
+                                for n, line in enumerate(files[currFile][1].split('\n')):
+                                    x = sp + 5
+                                    for cn, c in enumerate(line + ' '):
+                                        if c == '	':
+                                            c = ' ' * TABSIZE
+                                        if cy == n:
+                                            if cx > len(line):
+                                                cx = len(line)
+                                            if cx == cn:
+                                                cursorPos = p
+                                        if c not in renderedChars:
+                                            t = font.render(
+                                                c, 1, SETTINGS['backgroundColour'])
+                                            renderedChars[c] = t
+                                        else:
+                                            t = renderedChars[c]
+                                        screen.blit(t, (x, y))
+                                        x += t.get_width()
+                                        p += 1
+                                    p2 -= len(line) + 1
+
+                                    y += font.get_height()
+                        elif event.key == pygame.K_DOWN:
+                            cursor = True
+                            if dragging:
+                                cursorPos = max([dragEnd, dragStart])
+                                dragging = False
+
+                            y = 105 + scrollY
+                            p = 0
+                            p2 = cursorPos
+                            cx = cy = 0
+                            for n, line in enumerate(files[currFile][1].split('\n')):
+                                x = sp + 5
+                                for cn, c in enumerate(line + ' '):
+                                    if c == '	':
+                                        c = ' ' * TABSIZE
+                                    if cursor and p == cursorPos:
+                                        cy = n
+                                        cx = p2
                                     if c not in renderedChars:
                                         t = font.render(
                                             c, 1, SETTINGS['backgroundColour'])
@@ -2166,192 +2208,164 @@ Micro:Pi knows where to find it.""")
                                 p2 -= len(line) + 1
 
                                 y += font.get_height()
-                    elif event.key == pygame.K_DOWN:
-                        cursor = True
-                        if dragging:
-                            cursorPos = max([dragEnd, dragStart])
-                            dragging = False
+                            if cy < len(files[currFile][1].split('\n')):
+                                cy += 1
 
-                        y = 105 + scrollY
-                        p = 0
-                        p2 = cursorPos
-                        cx = cy = 0
-                        for n, line in enumerate(files[currFile][1].split('\n')):
-                            x = sp + 5
-                            for cn, c in enumerate(line + ' '):
-                                if c == '	':
-                                    c = ' ' * TABSIZE
-                                if cursor and p == cursorPos:
-                                    cy = n
-                                    cx = p2
-                                if c not in renderedChars:
-                                    t = font.render(
-                                        c, 1, SETTINGS['backgroundColour'])
-                                    renderedChars[c] = t
-                                else:
-                                    t = renderedChars[c]
-                                screen.blit(t, (x, y))
-                                x += t.get_width()
-                                p += 1
-                            p2 -= len(line) + 1
+                                y = 105 + scrollY
+                                p = 0
+                                p2 = cursorPos
+                                for n, line in enumerate(files[currFile][1].split('\n')):
+                                    x = sp + 5
+                                    for cn, c in enumerate(line + ' '):
+                                        if c == '	':
+                                            c = ' ' * TABSIZE
+                                        if cy == n:
+                                            if cx > len(line):
+                                                cx = len(line)
+                                            if cx == cn:
+                                                cursorPos = p
+                                        if c not in renderedChars:
+                                            t = font.render(
+                                                c, 1, SETTINGS['backgroundColour'])
+                                            renderedChars[c] = t
+                                        else:
+                                            t = renderedChars[c]
+                                        screen.blit(t, (x, y))
+                                        x += t.get_width()
+                                        p += 1
+                                    p2 -= len(line) + 1
 
-                            y += font.get_height()
-                        if cy < len(files[currFile][1].split('\n')):
-                            cy += 1
-
-                            y = 105 + scrollY
-                            p = 0
-                            p2 = cursorPos
-                            for n, line in enumerate(files[currFile][1].split('\n')):
-                                x = sp + 5
-                                for cn, c in enumerate(line + ' '):
-                                    if c == '	':
-                                        c = ' ' * TABSIZE
-                                    if cy == n:
-                                        if cx > len(line):
-                                            cx = len(line)
-                                        if cx == cn:
-                                            cursorPos = p
-                                    if c not in renderedChars:
-                                        t = font.render(
-                                            c, 1, SETTINGS['backgroundColour'])
-                                        renderedChars[c] = t
-                                    else:
-                                        t = renderedChars[c]
-                                    screen.blit(t, (x, y))
-                                    x += t.get_width()
-                                    p += 1
-                                p2 -= len(line) + 1
-
-                                y += font.get_height()
-                    elif event.key == pygame.K_BACKSPACE:
-                        cursor = True
-                        mn = min([dragEnd, dragStart])
-                        mx = max([dragEnd, dragStart])
-                        if not dragging:
-                            if cursorPos > 0:
-                                t = files[currFile][1]
-                                t = t[:cursorPos - 1] + t[cursorPos:]
-                                files[currFile][1] = t
-                                cursorPos -= 1
-                        else:
-                            cursorPos = mx
-                            while cursorPos >= mn:
-                                t = files[currFile][1]
-                                t = t[:cursorPos] + t[cursorPos + 1:]
-                                files[currFile][1] = t
-                                cursorPos -= 1
-                            cursorPos += 1
-                            dragEnd = cursorPos
-                            dragStart = cursorPos
-                    elif event.key == pygame.K_DELETE:
-                        cursor = True
-                        if not dragging:
-                            if cursorPos < len(files[currFile][1]):
-                                t = files[currFile][1]
-                                t = t[:cursorPos] + t[cursorPos + 1:]
-                                files[currFile][1] = t
-                        else:
+                                    y += font.get_height()
+                        elif event.key == pygame.K_BACKSPACE:
+                            cursor = True
                             mn = min([dragEnd, dragStart])
                             mx = max([dragEnd, dragStart])
-                            mmn = mn
-                            while mn < mx:
-                                t = files[currFile][1]
-                                t = t[:mmn] + t[mmn + 1:]
-                                files[currFile][1] = t
-                                mn += 1
-                            dragEnd = mmn
-                            dragStart = mmn
-                            cursorPos = mmn
-                    elif event.key == pygame.K_F11:
-                        t = pygame.time.get_ticks()
-                        if t - fullScreenTick >= fullScreenDelay:
-                            fullScreenTick = t
-                            if not fullscreen:
-                                sbf = screen_size
-                                w = displaySettings.current_w
-                                h = displaySettings.current_h
-                                screen = pygame.display.set_mode(
-                                    (w, h), pygame.FULLSCREEN)
-                                screen_size = [w, h]
-                                fullscreen = True
+                            if not dragging:
+                                if cursorPos > 0:
+                                    t = files[currFile][1]
+                                    t = t[:cursorPos - 1] + t[cursorPos:]
+                                    files[currFile][1] = t
+                                    cursorPos -= 1
                             else:
-                                screen_size = sbf
-                                screen = pygame.display.set_mode(
-                                    sbf, pygame.RESIZABLE)
-                                fullscreen = False
-                    elif event.unicode in string.printable[:-2] and event.unicode:
-                        if event.unicode == '\r':
-                            event.unicode = '\n'
-                        cursor = True
-                        if not dragging:
-                            t = files[currFile][1]
-                            t = t[:cursorPos] + event.unicode + t[cursorPos:]
-                            files[currFile][1] = t
-                            cursorPos += 1 if event.unicode != '\t' else TABSIZE
-                        else:
-                            mn = min([dragEnd, dragStart])
-                            mx = max([dragEnd, dragStart])
-                            mmn = mn
-                            while mn < mx:
+                                cursorPos = mx
+                                while cursorPos >= mn:
+                                    t = files[currFile][1]
+                                    t = t[:cursorPos] + t[cursorPos + 1:]
+                                    files[currFile][1] = t
+                                    cursorPos -= 1
+                                cursorPos += 1
+                                dragEnd = cursorPos
+                                dragStart = cursorPos
+                        elif event.key == pygame.K_DELETE:
+                            cursor = True
+                            if not dragging:
+                                if cursorPos < len(files[currFile][1]):
+                                    t = files[currFile][1]
+                                    t = t[:cursorPos] + t[cursorPos + 1:]
+                                    files[currFile][1] = t
+                            else:
+                                mn = min([dragEnd, dragStart])
+                                mx = max([dragEnd, dragStart])
+                                mmn = mn
+                                while mn < mx:
+                                    t = files[currFile][1]
+                                    t = t[:mmn] + t[mmn + 1:]
+                                    files[currFile][1] = t
+                                    mn += 1
+                                dragEnd = mmn
+                                dragStart = mmn
+                                cursorPos = mmn
+                        elif event.key == pygame.K_F11:
+                            t = pygame.time.get_ticks()
+                            if t - fullScreenTick >= fullScreenDelay:
+                                fullScreenTick = t
+                                if not fullscreen:
+                                    sbf = screen_size
+                                    w = displaySettings.current_w
+                                    h = displaySettings.current_h
+                                    screen = pygame.display.set_mode(
+                                        (w, h), pygame.FULLSCREEN)
+                                    screen_size = [w, h]
+                                    fullscreen = True
+                                else:
+                                    screen_size = sbf
+                                    screen = pygame.display.set_mode(
+                                        sbf, pygame.RESIZABLE)
+                                    fullscreen = False
+                        elif event.key == pygame.K_RETURN:
+                            k = '\n'
+                        elif event.unicode in string.printable[:-2] and event.unicode:
+                            if event.unicode == u'\r':
+                                event.unicode = u'\n'
+                            cursor = True
+                            if not dragging:
                                 t = files[currFile][1]
-                                t = t[:mmn] + t[mmn + 1:]
+                                t = t[:cursorPos] + event.unicode + t[cursorPos:]
                                 files[currFile][1] = t
-                                mn += 1
-                            dragEnd = mmn
-                            dragStart = mmn
-                            cursorPos = mmn
-                            t = files[currFile][1]
-                            t = t[:cursorPos] + event.unicode + t[cursorPos:]
-                            files[currFile][1] = t
-                            cursorPos += 1 if event.unicode != '\t' else TABSIZE
-                elif typinginSettings:
-                    if event.key == pygame.K_LEFT:
-                        if settingsCursor > 0:
-                            settingsCursor -= 1
-                    elif event.key == pygame.K_RIGHT:
-                        if settingsCursor < len(SETTINGS['mbitLocation']):
+                                cursorPos += 1 if event.unicode != '\t' else TABSIZE
+                            else:
+                                mn = min([dragEnd, dragStart])
+                                mx = max([dragEnd, dragStart])
+                                mmn = mn
+                                while mn < mx:
+                                    t = files[currFile][1]
+                                    t = t[:mmn] + t[mmn + 1:]
+                                    files[currFile][1] = t
+                                    mn += 1
+                                dragEnd = mmn
+                                dragStart = mmn
+                                cursorPos = mmn
+                                t = files[currFile][1]
+                                t = t[:cursorPos] + event.unicode + t[cursorPos:]
+                                files[currFile][1] = t
+                                cursorPos += 1 if event.unicode != '\t' else TABSIZE
+                    elif typinginSettings:
+                        if event.key == pygame.K_LEFT:
+                            if settingsCursor > 0:
+                                settingsCursor -= 1
+                        elif event.key == pygame.K_RIGHT:
+                            if settingsCursor < len(SETTINGS['mbitLocation']):
+                                settingsCursor += 1
+                        elif event.key == pygame.K_DELETE:
+                            if settingsCursor < len(SETTINGS['mbitLocation']):
+                                SETTINGS['mbitLocation'] = SETTINGS['mbitLocation'][
+                                    :settingsCursor] + SETTINGS['mbitLocation'][settingsCursor + 1:]
+                        elif event.key == pygame.K_BACKSPACE:
+                            if settingsCursor > 0:
+                                SETTINGS['mbitLocation'] = SETTINGS['mbitLocation'][
+                                    :settingsCursor - 1] + SETTINGS['mbitLocation'][settingsCursor:]
+                                settingsCursor -= 1
+                        elif event.unicode in string.printable and event.unicode:
+                            if event.unicode == '\r':
+                                event.unicode = '\n'
+                            SETTINGS['mbitLocation'] = SETTINGS['mbitLocation'][
+                                :settingsCursor] + event.unicode + SETTINGS['mbitLocation'][settingsCursor:]
                             settingsCursor += 1
-                    elif event.key == pygame.K_DELETE:
-                        if settingsCursor < len(SETTINGS['mbitLocation']):
-                            SETTINGS['mbitLocation'] = SETTINGS['mbitLocation'][
-                                :settingsCursor] + SETTINGS['mbitLocation'][settingsCursor + 1:]
-                    elif event.key == pygame.K_BACKSPACE:
-                        if settingsCursor > 0:
-                            SETTINGS['mbitLocation'] = SETTINGS['mbitLocation'][
-                                :settingsCursor - 1] + SETTINGS['mbitLocation'][settingsCursor:]
-                            settingsCursor -= 1
-                    elif event.unicode in string.printable and event.unicode:
-                        if event.unicode == '\r':
-                            event.unicode = '\n'
-                        SETTINGS['mbitLocation'] = SETTINGS['mbitLocation'][
-                            :settingsCursor] + event.unicode + SETTINGS['mbitLocation'][settingsCursor:]
-                        settingsCursor += 1
-                elif showTextDialog:
-                    if event.key == pygame.K_LEFT:
-                        if textDialogCursor > 0:
-                            textDialogCursor -= 1
-                    elif event.key == pygame.K_RETURN:
-                        showTextDialog = False
-                        textDialogCommand(textDialogText)
-                    elif event.key == pygame.K_RIGHT:
-                        if textDialogCursor < len(textDialogText):
+                    elif showTextDialog:
+                        if event.key == pygame.K_LEFT:
+                            if textDialogCursor > 0:
+                                textDialogCursor -= 1
+                        elif event.key == pygame.K_RETURN:
+                            showTextDialog = False
+                            textDialogCommand(textDialogText)
+                        elif event.key == pygame.K_RIGHT:
+                            if textDialogCursor < len(textDialogText):
+                                textDialogCursor += 1
+                        elif event.key == pygame.K_DELETE:
+                            if textDialogCursor < len(textDialogText):
+                                textDialogText = textDialogText[
+                                    :textDialogCursor] + textDialogText[textDialogCursor + 1:]
+                        elif event.key == pygame.K_BACKSPACE:
+                            if textDialogCursor > 0:
+                                textDialogText = textDialogText[
+                                    :textDialogCursor - 1] + textDialogText[textDialogCursor:]
+                                textDialogCursor -= 1
+                        elif event.unicode in string.printable and event.unicode:
+                            if event.unicode == '\r':
+                                event.unicode = '\n'
+                            textDialogText = textDialogText[
+                                :textDialogCursor] + event.unicode + textDialogText[textDialogCursor:]
                             textDialogCursor += 1
-                    elif event.key == pygame.K_DELETE:
-                        if textDialogCursor < len(textDialogText):
-                            textDialogText = textDialogText[
-                                :textDialogCursor] + textDialogText[textDialogCursor + 1:]
-                    elif event.key == pygame.K_BACKSPACE:
-                        if textDialogCursor > 0:
-                            textDialogText = textDialogText[
-                                :textDialogCursor - 1] + textDialogText[textDialogCursor:]
-                            textDialogCursor -= 1
-                    elif event.unicode in string.printable and event.unicode:
-                        if event.unicode == '\r':
-                            event.unicode = '\n'
-                        textDialogText = textDialogText[
-                            :textDialogCursor] + event.unicode + textDialogText[textDialogCursor:]
-                        textDialogCursor += 1
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 5 and not showFileSelect and not showFileCreate:
                     if pygame.Rect(5, 105, screen_size[0] - 10, textBottom - 105).collidepoint(event.pos):
