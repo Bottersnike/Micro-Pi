@@ -84,7 +84,7 @@ for scheme in INSTALL_SCHEMES.values():
 	scheme['data'] = scheme['purelib']
 
 setup(name='MicroPi',
-	  version='0.4.1',
+	  version='0.4.2',
 	  description='A Micro:Bit IDE',
 	  author='Nathan Taylor',
 	  author_email='bottersnike237@gmail.com',

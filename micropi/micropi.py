@@ -437,7 +437,7 @@ fileExtention: "mpi\""""
 
         if WINDOWS:
             p = Popen(
-                ['yotta', '--plain build'],
+                'cd %s & yotta --plain build' % buildLocation,
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
@@ -864,7 +864,7 @@ while (1)
         open('source/main.cpp', 'w').write(_file)
         if WINDOWS:
             p = Popen(
-                ['yotta', '--plain build'],
+                'cd %s & yotta --plain build' % buildLocation,
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
