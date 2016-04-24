@@ -159,9 +159,9 @@ fileExtention: "mpi\""""
 
         f = tempfile.mktemp()
         try:
-            open(f, 'w').write(base64.b64decode(buildenv.benv.replace('\n', '')))
+            open(f, 'wb').write(base64.b64decode(buildenv.benv.replace('\n', '')))
         except:
-            __f = open(f, 'w')
+            __f = open(f, 'wb')
             __f.buffer.write(base64.b64decode(buildenv.benv.replace('\n', '')))
             __f.close()
         tf = tarfile.open(f, 'r:gz')
