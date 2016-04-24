@@ -2369,6 +2369,8 @@ Micro:Pi knows where to find it.""")
                                             unindentDepth += 1
                                 if unindentDepth == TABSIZE:
                                     files[currFile][1] = files[currFile][1][:cursorPos - unindentDepth] + files[currFile][1][cursorPos:]
+                                    cursorPos -= TABSIZE
+
                             if not dragging:
                                 t = files[currFile][1]
                                 t = t[:cursorPos] + event.unicode + t[cursorPos:]
@@ -2390,8 +2392,6 @@ Micro:Pi knows where to find it.""")
                                 t = t[:cursorPos] + event.unicode + t[cursorPos:]
                                 files[currFile][1] = t
                                 cursorPos += 1 if event.unicode != '\t' else TABSIZE
-                            if unindentDepth == TABSIZE:
-                                cursorPos -= unindentDepth
                     elif typinginSettings:
                         if event.key == pygame.K_LEFT:
                             if settingsCursor > 0:
