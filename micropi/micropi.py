@@ -59,6 +59,11 @@ try:
     import tempfile
     import base64
 
+    from pygments import lex
+    from pygments.lexers import CppLexer
+    from pygments.styles import tango as styleModule #tango, default
+    style = styleModule.TangoStyle()
+
     s = pygame.image.load('data/icon.png')
     pygame.display.set_icon(s)
 
@@ -606,30 +611,6 @@ fileExtention: "mpi\""""
 
             clipboard = files[currFile][1][mn:mx]
 
-            #y = 105 + scrollY
-            #p = 0
-            #for n, line in enumerate(files[currFile][1].split('\n')):
-                #if y < textBottom and y >= 100:
-                    #x = sp + 5
-                    #for cn, c in enumerate(line + ' '):
-                        #if c == '	':
-                            #c = ' ' * TABSIZE
-                        #if c not in renderedChars:
-                            #t = font.render(c, 1, (36, 36, 36))
-                            #renderedChars[c] = t
-                        #else:
-                            #t = renderedChars[c]
-                        #if dragging:
-                            #if dragStart <= p < dragEnd or dragStart > p >= dragEnd:
-                                #clipboard += c
-                        #x += t.get_width()
-                        #p += 1
-                #else:
-                    #for cn, c in enumerate(line + ' '):
-                        #p += 1
-#
-                #y += font.get_height()
-
     def pasteText():
         global cursorPos
         global dragEnd
@@ -644,6 +625,23 @@ fileExtention: "mpi\""""
             mn = min([dragEnd, dragStart])
             mx = max([dragEnd, dragStart])
             files[currFile][1] = files[currFile][1][:mn] + clipboard + files[currFile][1][mx:]
+
+    def hextorgb(_hex):
+        d = _hex.split(' ')
+        _hex = d[-1]
+        _hex = _hex.lstrip('#')
+        if len(_hex) == 6:
+            return tuple(int(_hex[i:i+2], 16) for i in (0, 2, 4))
+        elif len(_hex) == 3:
+            return tuple(int(_hex[i:i+1], 16) for i in (0, 1, 2))
+        else:
+            return SETTINGS['backgroundColour']
+
+    def getCol(t):
+        if t in style.styles:
+            return hextorgb(style.styles[t])
+        else:
+            return SETTINGS['backgroundColour']
 
     log("Loading Fonts")
 
@@ -820,6 +818,8 @@ Micro:Pi is not affiliated with the BBC in any way."""
     dragEnd = 0
 
     debug = False
+
+
 
     fullScreenTick = 0
     fullScreenDelay = 100
@@ -1117,6 +1117,7 @@ Micro:Pi knows where to find it.""")
         hit = False
         y = 105 + scrollY
         p = 0
+        currentlyIn = []
         for n, line in enumerate(files[currFile][1].split('\n')):
             if y < textBottom and y > 100 and not hit:
                 x = sp + 5
@@ -1170,6 +1171,13 @@ Micro:Pi knows where to find it.""")
 
         y = 105 + scrollY
         p = 0
+
+        colDat = lex(files[currFile][1], CppLexer())
+        colText = []
+        for i in colDat:
+            for ii in i[1]:
+                colText.append((i[0]))
+
         for n, line in enumerate(files[currFile][1].split('\n')):
             if y < textBottom and y >= 100:
                 if str(n + 1) not in renderedChars:
@@ -1191,11 +1199,16 @@ Micro:Pi knows where to find it.""")
                             (x, y),
                             (x, y + t.get_height())
                         )
-                    if c not in renderedChars:
-                        t = font.render(c, 1, (36, 36, 36))
-                        renderedChars[c] = t
+
+
+
+                    if p < len(files[currFile][1]):
+                        col = getCol(colText[p])
                     else:
-                        t = renderedChars[c]
+                        col = SETTINGS['backgroundColour']
+                    t = font.render(c, 1, col)
+
+
                     if dragging:
                         if dragStart <= p < dragEnd or dragStart > p >= dragEnd:
                             pygame.draw.rect(screen, (160, 160, 160), (x, y, t.get_width(), t.get_height()))
@@ -2756,23 +2769,14 @@ Micro:Pi knows where to find it.""")
         p = 0
         p2 = cursorPos
         cx = cy = 0
+        currentlyIn = []
         for n, line in enumerate(files[currFile][1].split('\n')):
             x = sp + 5
             for cn, c in enumerate(line + ' '):
                 if c == '	':
                     c = ' ' * TABSIZE
-                if p == cursorPos:
-                    cy = n
-                    cx = p2
-                if c not in renderedChars:
-                    t = font.render(
-                        c,
-                        1,
-                        SETTINGS['backgroundColour']
-                    )
-                    renderedChars[c] = t
-                else:
-                    t = renderedChars[c]
+                col = SETTINGS['backgroundColour']
+                t = font.render(c, 1, col)
                 screen.blit(t, (x, y))
                 x += t.get_width()
                 p += 1
