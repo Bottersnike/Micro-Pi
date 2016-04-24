@@ -677,7 +677,7 @@ Micro:Pi is not affiliated with the BBC in any way."""
     scrollY = 0
     cscrollY = 0
 
-    pygame.key.set_repeat(250, 50)
+    pygame.key.set_repeat(250, 25)
 
     log("Loading Icons")
 
@@ -1178,6 +1178,7 @@ Micro:Pi knows where to find it.""")
         for i in colDat:
             for ii in i[1]:
                 colText.append((i[0]))
+        #colText = ' ' * len(files[currFile][1])
 
         for n, line in enumerate(files[currFile][1].split('\n')):
             if y < textBottom and y >= 100:
@@ -2770,7 +2771,6 @@ Micro:Pi knows where to find it.""")
         p = 0
         p2 = cursorPos
         cx = cy = 0
-        currentlyIn = []
         for n, line in enumerate(files[currFile][1].split('\n')):
             x = sp + 5
             for cn, c in enumerate(line + ' '):
@@ -2782,6 +2782,8 @@ Micro:Pi knows where to find it.""")
                 x += t.get_width()
                 p += 1
             p2 -= len(line) + 1
+            if p2 >= 0:
+                cy += 1
 
             y += font.get_height()
 
