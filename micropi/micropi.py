@@ -819,7 +819,8 @@ Micro:Pi is not affiliated with the BBC in any way."""
 
     debug = False
 
-
+    indentSymbols = ['{', ':', '(']
+    closeIndentSymbols = ['}', ')']
 
     fullScreenTick = 0
     fullScreenDelay = 100
@@ -1202,7 +1203,7 @@ Micro:Pi knows where to find it.""")
 
 
 
-                    if p < len(files[currFile][1]):
+                    if p < min([len(files[currFile][1]), len(colText)]):
                         col = getCol(colText[p])
                     else:
                         col = SETTINGS['backgroundColour']
@@ -2328,7 +2329,7 @@ Micro:Pi knows where to find it.""")
                                     break
 
                             if cursorPos > 0:
-                                if files[currFile][1][cursorPos - 1] == '{':
+                                if files[currFile][1][cursorPos - 1] in indentSymbols:
                                     lastLineTabs += TABSIZE
 
                             k = '\n' + (' ' * lastLineTabs)
@@ -2361,7 +2362,7 @@ Micro:Pi knows where to find it.""")
                             cursor = True
 
                             unindentDepth = 0
-                            if event.unicode == u'}':
+                            if event.unicode in closeIndentSymbols:
                                 for i in range(1, TABSIZE + 1):
                                     ncp = cursorPos - i
                                     if ncp >= 0:
@@ -2803,16 +2804,33 @@ except Exception as e:
     lines = tb.split('\n')
     lines += ["Hit Any Key To Exit"]
 
+    os.environ['SDL_VIDEO_CENTERED'] = ''
     import pygame
+    import pygame.gfxdraw as gfx
     pygame.init()
     f = pygame.font.SysFont("monospace", 24)
     func = lambda x: f.size(x)[0]
     width = f.size(max(lines, key=func))[0]
     height = len(lines) * f.size('text')[1]
-    d = pygame.display.set_mode((width, height), pygame.NOFRAME)
+    d = pygame.display.set_mode((width + 4, height + 104), pygame.NOFRAME)
     pygame.display.set_caption("Micro:Bit - Error!", "Micro:Bit - Error!")
-    d.fill((36, 36, 36))
-    y = (d.get_height() - len(lines) * f.size('text')[1]) / 2
+    d.fill((20, 20, 20))
+    pygame.draw.rect(d, (36, 36, 36), (2, 2, width, height + 100))
+
+    col = (73, 182, 73)
+    gfx.aapolygon(d, [(2, 2), (2, 102), (102, 2)], col)
+    gfx.filled_polygon(d, [(2, 2), (2, 102), (102, 2)], col)
+
+    gfx.aapolygon(d, [(102, 2), (102, 77), (177, 2)], col)
+    gfx.filled_polygon(d, [(102, 2), (102, 77), (177, 2)], col)
+
+    gfx.aapolygon(d, [(177, 2), (177, 52), (227, 2)], col)
+    gfx.filled_polygon(d, [(177, 2), (177, 52), (227, 2)], col)
+
+    gfx.aapolygon(d, [(227, 2), (227, 27), (252, 2)], col)
+    gfx.filled_polygon(d, [(227, 2), (227, 27), (252, 2)], col)
+
+    y = (d.get_height() + 100 - len(lines) * f.size('text')[1]) / 2
     for l in lines:
         t = f.render(l, 1, (73, 182, 73))
         x = 0
