@@ -26,7 +26,7 @@ for scheme in INSTALL_SCHEMES.values():
 	scheme['data'] = scheme['purelib']
 
 setup(name='MicroPi',
-	  version='0.3.7',
+	  version='0.3.9',
 	  description='A Micro:Bit IDE',
 	  author='Nathan Taylor',
 	  author_email='bottersnike237@gmail.com',
@@ -34,7 +34,7 @@ setup(name='MicroPi',
 	  scripts=['scripts/micro-pi', 'scripts/reset-micro-pi'],
 	  packages=['micropi'],
 	  package_dir={'micropi': 'micropi'},
-	  package_data={'micropi': ['data/Monospace.ttf', 'data/Roboto-Bold.ttf', 'data/icon.png', 'data/Roboto.ttf', 'data/icons/buildRed.png', 'data/icons/uploadGreen.png', 'data/icons/menuBlue.png', 'data/icons/buildYellow.png', 'data/icons/uploadYellow.png', 'data/icons/consoleYellow.png', 'data/icons/consoleGreen.png', 'data/icons/menuYellow.png', 'data/icons/uploadBlue.png', 'data/icons/consoleBlue.png', 'data/icons/consoleRed.png', 'data/icons/menuGreen.png', 'data/icons/buildGreen.png', 'data/icons/buildBlue.png', 'data/icons/uploading.png', 'data/icons/uploadRed.png', 'data/icons/menuRed.png', 'data/icons/building.png', 'data/icons/SVG/uploadRed.svg', 'data/icons/SVG/uploading.svg', 'data/icons/SVG/buildBlue.svg', 'data/icons/SVG/buildRed.svg', 'data/icons/SVG/uploadGreen.svg', 'data/icons/SVG/uploadYellow.svg', 'data/icons/SVG/uploadBlue.svg', 'data/icons/SVG/buildGreen.svg', 'data/icons/SVG/buildYellow.svg', 'data/icons/SVG/building.svg', 'data/media/banner.png', 'data/splashScreens/1.png', 'examples/Button.mpi', 'examples/Scroll.mpi', 'Button.mpi', 'Scroll.mpi']},
+	  package_data={'micropi': ['data/Monospace.ttf', 'data/Roboto-Light.ttf', 'data/icon.png', 'data/Roboto.ttf', 'data/icons/buildRed.png', 'data/icons/uploadGreen.png', 'data/icons/menuBlue.png', 'data/icons/buildYellow.png', 'data/icons/uploadYellow.png', 'data/icons/consoleYellow.png', 'data/icons/consoleGreen.png', 'data/icons/menuYellow.png', 'data/icons/uploadBlue.png', 'data/icons/consoleBlue.png', 'data/icons/consoleRed.png', 'data/icons/menuGreen.png', 'data/icons/buildGreen.png', 'data/icons/buildBlue.png', 'data/icons/uploading.png', 'data/icons/uploadRed.png', 'data/icons/menuRed.png', 'data/icons/building.png', 'data/icons/SVG/uploadRed.svg', 'data/icons/SVG/uploading.svg', 'data/icons/SVG/buildBlue.svg', 'data/icons/SVG/ico.svg', 'data/icons/SVG/buildRed.svg', 'data/icons/SVG/uploadGreen.svg', 'data/icons/SVG/uploadYellow.svg', 'data/icons/SVG/uploadBlue.svg', 'data/icons/SVG/buildGreen.svg', 'data/icons/SVG/buildYellow.svg', 'data/icons/SVG/building.svg', 'data/splashScreens/1.png', 'examples/Button.mpi', 'examples/Scroll.mpi', 'Button.mpi', 'Scroll.mpi']},
 	  requires=['pygame', 'yotta'],
 	  provides=['micropi'],
       long_description=open("README.txt").read(),
