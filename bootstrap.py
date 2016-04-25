@@ -77,14 +77,10 @@ setupScript = """#!/usr/bin/env python
 #  MA 02110-1301, USA.
 #
 #
-from distutils.core import setup
-from distutils.command.install import INSTALL_SCHEMES
-
-for scheme in INSTALL_SCHEMES.values():
-	scheme['data'] = scheme['purelib']
+from setuptools import setup
 
 setup(name='MicroPi',
-	  version='0.4.2',
+	  version='0.4.3',
 	  description='A Micro:Bit IDE',
 	  author='Nathan Taylor',
 	  author_email='bottersnike237@gmail.com',
@@ -93,7 +89,7 @@ setup(name='MicroPi',
 	  packages=['micropi'],
 	  package_dir={'micropi': 'micropi'},
 	  package_data={'micropi': %s},
-	  requires=['pygame', 'yotta', 'pygments'],
+	  install_requires=['pygame', 'yotta', 'pygments', 'weena'],
 	  provides=['micropi'],
       long_description=open("README.txt").read(),
       license='GNU General Public License'
