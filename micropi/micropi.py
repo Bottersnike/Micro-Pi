@@ -197,18 +197,26 @@ fileExtention: "mpi\""""
         A wrapper arround PIPES to make them easier to use
         """
 
-        def __init__(self, stream):
+        def __init__(self, stream, parent):
             self._s = stream
             self._q = Queue()
             self._a = True
+            self.__a = True
+            self._p = parent
 
             def _populateQueue(stream, queue):
-                while self._a:
+                while self.__a:
                     line = stream.readline()
-                    if line:
+                    if type(line) == str:
                         queue.put(line)
-                    else:
-                        self._a = False
+            def _killWhenDone(parent):
+                parent.wait()
+                self.__a = False
+                data = self._s.read()
+                self._q.put(data)
+                while not self._q.empty():
+                    pass
+                self._a = False
 
             self._t = Thread(
                 target=_populateQueue,
@@ -216,6 +224,13 @@ fileExtention: "mpi\""""
             )
             self._t.daemon = True
             self._t.start()
+
+            self._t2 = Thread(
+                target=_killWhenDone,
+                args=(self._p,)
+            )
+            self._t2.daemon = True
+            self._t2.start()
 
         def readline(self, timeout=None):
             try:
@@ -441,7 +456,8 @@ fileExtention: "mpi\""""
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
-                stdout=PIPE
+                stdout=PIPE,
+                close_fds = True
             )
         else:
             p = Popen(
@@ -449,9 +465,10 @@ fileExtention: "mpi\""""
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
-                stdout=PIPE
+                stdout=PIPE,
+                close_fds = True
             )
-        pipes = (p.stdin, NBSR(p.stdout), NBSR(p.stderr))
+        pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
     def upload():
         if debug: addSideMessage('upload()')
@@ -585,7 +602,7 @@ fileExtention: "mpi\""""
 
     def menuReset():
         if debug: addSideMessage('menuReset()')
-        askyesno("Are you sure you want to reset your build?", rstbuild)
+        askyesno("Are you sure you want to reset your build?", "rstbuild()")
 
     def menuTogCons():
         if debug: addSideMessage('menuTogCons()')
@@ -868,7 +885,8 @@ while (1)
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
-                stdout=PIPE
+                stdout=PIPE,
+                close_fds = True
             )
         else:
             p = Popen(
@@ -876,9 +894,10 @@ while (1)
                 shell=True,
                 stderr=PIPE,
                 stdin=PIPE,
-                stdout=PIPE
+                stdout=PIPE,
+                close_fds = True
             )
-        pipes = (p.stdin, NBSR(p.stdout), NBSR(p.stderr))
+        pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
         while pipes:
             try:
@@ -1001,7 +1020,8 @@ while (1)
                 cscroll()
             consoleText += d1 + d2
 
-            if not (pipes[1].alive()) or (not pipes[2].alive()):
+            if not (pipes[1].alive() or pipes[2].alive()):
+                print pipes[1].alive(), pipes[2].alive()
                 pipes = None
                 mbedBuilding = False
                 os.chdir(prevLoc)
@@ -2394,6 +2414,32 @@ Micro:Pi knows where to find it.""")
                                 t = t[:cursorPos] + event.unicode + t[cursorPos:]
                                 files[currFile][1] = t
                                 cursorPos += 1 if event.unicode != '\t' else TABSIZE
+                        y = 105 + scrollY
+                        p = 0
+                        p2 = cursorPos
+                        cx = cy = 0
+                        for n, line in enumerate(files[currFile][1].split('\n')):
+                            x = sp + 5
+                            for cn, c in enumerate(line + ' '):
+                                if c == '	':
+                                    c = ' ' * TABSIZE
+                                col = SETTINGS['backgroundColour']
+                                t = font.render(c, 1, col)
+                                screen.blit(t, (x, y))
+                                x += t.get_width()
+                                p += 1
+                            p2 -= len(line) + 1
+                            if p2 >= 0:
+                                cy += 1
+
+                            y += font.get_height()
+
+                        cursorY = cy * font.size(' ')[1]
+                        if cursorY < abs(scrollY):
+                            scrollY += abs(scrollY) - cursorY
+                        if textBottom - 105 - font.size(' ')[1] < cursorY + scrollY:
+                            scrollY -= (cursorY + scrollY) - \
+                                (textBottom - 105 - font.size(' ')[1])
                     elif typinginSettings:
                         if event.key == pygame.K_LEFT:
                             if settingsCursor > 0:
@@ -2766,33 +2812,6 @@ Micro:Pi knows where to find it.""")
                         sideMessages[n][1] -= 1
                         if sideMessages[n][1] == 0:
                             sideMessages.remove(m)
-
-        y = 105 + scrollY
-        p = 0
-        p2 = cursorPos
-        cx = cy = 0
-        for n, line in enumerate(files[currFile][1].split('\n')):
-            x = sp + 5
-            for cn, c in enumerate(line + ' '):
-                if c == '	':
-                    c = ' ' * TABSIZE
-                col = SETTINGS['backgroundColour']
-                t = font.render(c, 1, col)
-                screen.blit(t, (x, y))
-                x += t.get_width()
-                p += 1
-            p2 -= len(line) + 1
-            if p2 >= 0:
-                cy += 1
-
-            y += font.get_height()
-
-        cursorY = cy * font.size(' ')[1]
-        if cursorY < abs(scrollY):
-            scrollY += abs(scrollY) - cursorY
-        if textBottom - 105 - font.size(' ')[1] < cursorY + scrollY:
-            scrollY -= (cursorY + scrollY) - \
-                (textBottom - 105 - font.size(' ')[1])
 except Exception as e:
     import traceback
     tb = traceback.format_exc()

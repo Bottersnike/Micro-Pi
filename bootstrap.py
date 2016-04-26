@@ -80,7 +80,7 @@ setupScript = """#!/usr/bin/env python
 from setuptools import setup
 
 setup(name='MicroPi',
-	  version='0.4.3',
+	  version='0.4.4',
 	  description='A Micro:Bit IDE',
 	  author='Nathan Taylor',
 	  author_email='bottersnike237@gmail.com',
