@@ -1,0 +1,12 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aV#include "MicroBit.h"\u000a#include "images.h"\u000a\u000aint delay = 50;\u000a\u000aint _min = 15;\u000aint _max = 200;\u000aint inc = 5;\u000a\u000aint lastButton = 0;\u000aint button = 0;\u000aint i = 0;\u000a\u000avoid app_main() {\u000a    while (1) {\u000a        uBit.display.print(image, i, 0, 1);\u000a        uBit.sleep(delay);\u000a        uBit.display.clear();\u000a        if (uBit.buttonB.isPressed()){\u000a            button = 1;\u000a        } else if (uBit.buttonA.isPressed()){\u000a            button = 2;\u000a        } else {\u000a            button = 0;\u000a        }\u000a        \u000a        i = i + 1;\u000a        if (i > 4) {\u000a            i = 0;\u000a        }\u000a        \u000a        if (button == 2 and lastButton != 2) {\u000a            delay = delay + inc;\u000a            if (delay > _max) {\u000a                delay = _max;\u000a            }\u000a        } else if (button == 1 and lastButton != 1) {\u000a            delay = delay - inc;\u000a            if (delay < _min) {\u000a                delay = _min;\u000a            }\u000a        }\u000a        \u000a        lastButton = button;\u000a    }\u000a}\u000a
+p3
+aa(lp4
+S'images.h'
+p5
+aVMicroBitImage image("1,0,0,0,0\u005cn\u005c\u000a                     1,0,0,0,0\u005cn\u005c\u000a                     1,0,0,0,0\u005cn\u005c\u000a                     1,0,0,0,0\u005cn\u005c\u000a                     1,0,0,0,0\u005cn");
+p6
+aa.
