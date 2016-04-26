@@ -532,9 +532,9 @@ fileExtention: "mpi\""""
         if debug: addSideMessage('delOpenFile()')
         global currFile
         files.remove(files[n])
-        if n == len(fileRects) - 2 and n != 0:
+        while currFile >= len(files) and currFile != 0:
             currFile -= 1
-        elif len(files) == 0:
+        if len(files) == 0:
             files.append(['main.cpp', '\n'])
 
     def cscroll():
@@ -971,15 +971,16 @@ while (1)
             files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
             files[n][1] = files[n][1].replace('\t', ' ' * TABSIZE)
 
+        fileN = files[currFile][0] if currFile < len(files) else files[-1][0]
         if saved:
             pygame.display.set_caption(
-                "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0]),
-                "Micro:Pi - %s - %s" % (saveLoc, files[currFile][0])
+                "Micro:Pi - %s - %s" % (saveLoc, fileN),
+                "Micro:Pi - %s - %s" % (saveLoc, fileN)
             )
         else:
             pygame.display.set_caption(
-                "Micro:Pi - %s - *%s" % (saveLoc, files[currFile][0]),
-                "Micro:Pi - %s - *%s" % (saveLoc, files[currFile][0])
+                "Micro:Pi - %s - *%s" % (saveLoc, fileN),
+                "Micro:Pi - %s - *%s" % (saveLoc, fileN)
             )
         settingsRendered = False
         filesRendered = False
