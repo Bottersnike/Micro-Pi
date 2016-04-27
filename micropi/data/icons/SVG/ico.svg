@@ -1,50 +1,95 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="1280" height="1024">
-<!--
-    <path style="fill:#49B649" d="M 0 0  1280 0  1280 1024  0 1024"/>
--->
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
 
-<!--
-    <circle cx="340" cy="512" r="140" style="fill:#49B649"/>
--->
-
-<!--
-    <circle cx="840" cy="512" r="200" style="fill:#000000"/>
-    <circle cx="840" cy="512" r="140" style="fill:#49B649"/>
--->
-
-    <defs>
-        <mask id="cut-off-side">
-            <path fill="white" d="M 0 0  1280 0  1280 1024  0 1024"/>
-            <path fill="black" d="M 340 372  740 372  740 652  340 652"/>
-            <circle cx="340" cy="512" r="140" style="fill:black"/>
-        </mask>
-    </defs>
-
-    <circle mask="url(#cut-off-side)" cx="340" cy="512" r="200" style="fill:#000000"/>
-
-<!--
-    <path style="mask:url(#cut-off-side)" stroke="blue" stroke-width="60" fill="none" d="M172,512a170,170 0 1,0 340,0a170,170 0 1,0 -340,0"/>
--->
-<!--
-    <path fill="green" d="M 340 372  740 372  740 652  340 652"/>
--->
-
-
-    <circle cx="340" cy="512" r="69" style="fill:#000000"/>
-
-    <path style="fill:#000000" d="M 540 482  740 482  740 542  540 542"/>
-    <path style="fill:#000000" d="M 610 412  670 412  670 612  610 612"/>
-
-    <path style="fill:#000000" d="M 840 482  1040 482  1040 542  840 542"/>
-    <path style="fill:#000000" d="M 910 412  970 412  970 612  910 612"/>
-
-<!--
-    <circle cx="840" cy="512" r="69" style="fill:#000000"/>
--->
-
-<!--
-    <path style="fill:#000000" d="M 440 312  840 312  840 372  440 372"/>
-    <path style="fill:#000000" d="M 440 652  840 652  840 712  440 712"/>
--->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="900"
+   height="400"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="New document 1">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="665.493"
+     inkscape:cy="30.676353"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px"
+     inkscape:window-width="1280"
+     inkscape:window-height="956"
+     inkscape:window-x="0"
+     inkscape:window-y="36"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-652.36159)">
+    <path
+       style="fill:#000000;fill-rule:evenodd;stroke:none"
+       d="M 200,0 C 89.543058,0 0,89.54305 0,200 c 0,110.45695 89.543058,200 200,200 55.89655,0 106.42741,-22.93875 142.71875,-59.90625 l -142.71875,0 c -77.31986,0 -140,-62.68014 -140,-140 0,-77.31986 62.68014,-140 140,-140 l 142.90625,0 C 306.60171,23.015146 255.99199,0 200,0 z"
+       transform="translate(0,652.3622)"
+       id="path2987"
+       inkscape:connector-curvature="0" />
+    <circle
+       transform="translate(-140,340.3622)"
+       sodipodi:ry="69"
+       sodipodi:rx="69"
+       sodipodi:cy="512"
+       sodipodi:cx="340"
+       cx="340"
+       cy="512"
+       r="69"
+       style="fill:#000000"
+       id="circle15"
+       d="m 409,512 c 0,38.10765 -30.89235,69 -69,69 -38.10765,0 -69,-30.89235 -69,-69 0,-38.10765 30.89235,-69 69,-69 38.10765,0 69,30.89235 69,69 z" />
+    <path
+       inkscape:connector-curvature="0"
+       style="fill:#000000"
+       d="m 400,822.3622 200,0 0,60 -200,0"
+       id="path21" />
+    <path
+       inkscape:connector-curvature="0"
+       style="fill:#000000"
+       d="m 470,752.3622 60,0 0,200 -60,0"
+       id="path23" />
+    <path
+       inkscape:connector-curvature="0"
+       style="fill:#000000"
+       d="m 700,822.3622 200,0 0,60 -200,0"
+       id="path21-0" />
+    <path
+       inkscape:connector-curvature="0"
+       style="fill:#000000"
+       d="m 770,752.3622 60,0 0,200 -60,0"
+       id="path23-1" />
+  </g>
 </svg>
