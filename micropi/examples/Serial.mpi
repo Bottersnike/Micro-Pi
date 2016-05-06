@@ -1,0 +1,7 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aS'#include "MicroBit.h"\n\nMicroBitSerial serial(USBTX, USBRX);\nManagedString dat;\nManagedString LINEENDING(\'\\n\');\n\nvoid app_main()\n{\n\twhile (1) {\n\t\tdat = serial.readString();\n\t\tserial.sendString(dat + LINEENDING);\n\t\tuBit.sleep(500);\n\t}\n}\n'
+p3
+aa.

@@ -38,6 +38,10 @@ import buildenv
 import tarfile
 import platform
 import webbrowser
+import serial
+import serial.tools.list_ports as list_ports
+import string
+import random
 
 def printError():
     data = ''
@@ -219,6 +223,10 @@ def uBitPoller(self):
         last = (self.uBitFound, self.uBitUploading)
 
 def pipePoller(self):
+    def addText(self, text):
+#        pass
+        tb = self.consoleBody.get_buffer()
+        tb.insert(tb.get_end_iter(), text)
     while True:
         if self.pipes:
             try:
@@ -234,6 +242,7 @@ def pipePoller(self):
 
             tb = self.consoleBody.get_buffer()
             tb.insert(tb.get_end_iter(), d1 + d2)
+            #gobject.idle_add(addText, self, d1 + d2)
 
             if not (self.pipes[1].alive() or self.pipes[2].alive()):
                 self.pipes = None
@@ -242,10 +251,12 @@ def pipePoller(self):
                 if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
                     tb = self.consoleBody.get_buffer()
                     tb.insert(tb.get_end_iter(), "Done!\n")
+                    #gobject.idle_add(addText, self, "Done!\n")
                     if self.mbedUploading and self.uBitFound:
+                        gobject.idle_add(addText, self, "Uploading!\n")
                         tb = self.consoleBody.get_buffer()
                         tb.insert(tb.get_end_iter(), "Uploading!\n")
-                        self.uBitUploading = True
+                        #self.uBitUploading = True
                         thread = Thread(target=upload, args=(self,))
                         thread.daemon = True
                         thread.start()
@@ -264,7 +275,8 @@ back through the console
 to find out what the error is!""")
                     self.uBitUploading = False
                     self.mbedUploading = False
-        time.sleep(0.1)
+        else:
+            time.sleep(0.1)
 
 def upload(self):
     end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation).read()
@@ -290,6 +302,30 @@ def updateTitle(self):
         lastTitle = title
 
         time.sleep(0.1)
+
+def serialPoller(self):
+    start = True
+    def addText(self, text):
+        tb = self.consoleBody.get_buffer()
+        tb.insert(tb.get_end_iter(), text)
+    while True:
+        if self.serialConnection:
+            try:
+                data = self.serialConnection.read()
+                d2 = ''
+                for i in data:
+                    if i in string.printable:
+                        d2 += i
+                gobject.idle_add(addText, self, d2)
+            except:
+                pass
+        else:
+            try:
+                self.serialConnection = serial.serial_for_url(self.serialLocation)
+                self.serialConnection.baudrate = self.baudrate
+            except:
+                pass
+            time.sleep(0.1)
 
 def saveSettings():
     data = ''
@@ -373,6 +409,8 @@ class MainWin:
 
         self.window.connect("delete_event", self.destroy)
 
+        self.serialConsole = SerialConsole()
+
         self.table = gtk.Table(5, 1, False)
         self.table.show()
         self.window.add(self.table)
@@ -438,6 +476,8 @@ class MainWin:
                                 ("_Build", (self.startBuild, gtk.STOCK_EXECUTE, '<Control>B')),
                                 ("Build and _Upload", (self.startBuildAndUpload, '', '<Control>U')),
                                 ("_Force Upload", (self.forceUpload, gtk.STOCK_DISCONNECT, '')),
+                                ('', ''),
+                                ("Serial _Monitor", (self.serialConsole.toggleVis, '', '<Control>M'))
                                ]
                     ),
                     ("_Help", [
@@ -674,7 +714,7 @@ void app_main()
     def openFile(self, *args):
         if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
             fn = gtk.FileChooserDialog(title=None,
-                                       action=gtk.FileChooserAction.OPEN,
+                                       action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                        buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
             _filter = gtk.FileFilter()
             _filter.set_name("Micro:Pi Files")
@@ -720,7 +760,7 @@ void app_main()
 
     def saveAs(self, *args):
         fn = gtk.FileChooserDialog(title=None,
-                                   action=gtk.FileChooserAction.SAVE,
+                                   action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                    buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
         _filter.set_name("Micro:Pi Files")
@@ -903,7 +943,7 @@ void app_main()
 
     def importFile(self, *args):
         fn = gtk.FileChooserDialog(title=None,
-                                   action=gtk.FileChooserAction.OPEN,
+                                   action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                    buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
         _filter.set_name("C++ Files")
@@ -962,6 +1002,272 @@ void app_main()
         thread.daemon = True
         thread.start()
         gtk.main()
+
+class SerialConsole:
+    def __init__(self):
+        self.imageCreator = ImageCreator()
+
+        self.baudrate = 115200
+        self.ports = list(list_ports.grep(''))
+        self.serialLocation = self.ports[0][0] if self.ports else None
+        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        if self.serialLocation is not None:
+            self.serialConnection.baudrate = self.baudrate
+
+        thread = Thread(target=serialPoller, args=(self,))
+        thread.daemon = True
+        thread.start()
+
+        mgr = gtkSourceView.style_scheme_manager_get_default()
+        self.style_scheme = mgr.get_scheme('oblivion')
+
+        self.window = gtk.Window()
+        self.window.set_title('Serial Monitor')
+        self.window.set_icon_from_file('data/icon.png')
+        self.window.resize(750, 400)
+        colour = gtk.gdk.color_parse('#242424')
+        self.window.modify_bg(gtk.STATE_NORMAL, colour)
+
+        self.vbox = gtk.VBox()
+        self.vbox.show()
+
+        self.consoleFrame = gtk.ScrolledWindow()
+        self.consoleFrame.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_ALWAYS)
+        self.consoleFrame.show()
+
+        txtB = gtkSourceView.Buffer()
+        txtB.set_style_scheme(self.style_scheme)
+        txtB.set_highlight_matching_brackets(False)
+        txtB.set_highlight_syntax(False)
+        txtB.place_cursor(txtB.get_start_iter())
+
+        self.consoleBody = SourceView(txtB)
+        self.consoleBody.modify_font(pango.FontDescription('Monospace 10'))
+        self.consoleBody.show()
+        self.consoleFrame.add(self.consoleBody)
+        self.consoleBody.set_editable(False)
+        self.vbox.pack_start(self.consoleFrame, 2)
+
+        self.entryHBox = gtk.HBox()
+        self.entry = gtk.Entry()
+        self.entryHBox.pack_start(self.entry, True, True, 2)
+        self.entry.show()
+        self.entry.connect("activate", self.send)
+        self.sendButton = gtk.Button("Send")
+        self.entryHBox.pack_start(self.sendButton, False, False, 2)
+        self.sendButton.show()
+        self.sendButton.connect("clicked", self.send)
+        self.sendImageButton = gtk.Button("Send Image")
+        self.entryHBox.pack_start(self.sendImageButton, False, False, 2)
+        self.sendImageButton.show()
+        self.sendImageButton.connect("clicked", self.showImageCreator)
+
+        self.entryHBox.show()
+        self.vbox.pack_start(self.entryHBox, False, False, 2)
+
+        self.hbox = gtk.HBox()
+        self.hbox.show()
+        self.gtkbaudrate = gtk.combo_box_new_text()
+        self.gtkbaudrate.append_text('9600')
+        self.gtkbaudrate.append_text('115200')
+        self.gtkbaudrate.append_text('1234987')
+        self.gtkbaudrate.show()
+        self.gtkbaudrate.set_active(1)
+        self.gtkbaudrate.connect('changed', self.brtchange)
+        self.hbox.pack_start(self.gtkbaudrate, False, False)
+
+        self.refreshButton = gtk.Button("Refresh")
+        self.refreshButton.show()
+        self.refreshButton.connect('clicked', self.refresh)
+        self.hbox.pack_start(self.refreshButton, True, False)
+
+        self.clearButton = gtk.Button("Clear")
+        self.clearButton.show()
+        self.clearButton.connect('clicked', self.clear)
+        self.hbox.pack_start(self.clearButton, True, False)
+
+        self.gtkserialloc = gtk.combo_box_new_text()
+        for i in self.ports:
+            self.gtkserialloc.append_text(i[0])
+        self.gtkserialloc.show()
+        self.gtkserialloc.set_active(0)
+        self.gtkserialloc.connect('changed', self.portchange)
+        self.gtkserialloc.show()
+        self.hbox.pack_end(self.gtkserialloc, False, False)
+        self.vbox.pack_start(self.hbox, False, False, 0)
+
+        self.window.add(self.vbox)
+
+        self.shown = False
+
+        self.window.connect("delete_event", self.destroy)
+
+    def send(self, *args):
+        if self.serialConnection:
+            self.serialConnection.write(self.entry.get_text() + '\n')
+        self.entry.set_text('')
+
+    def clear(self, *args):
+        txtB = gtkSourceView.Buffer()
+        txtB.set_style_scheme(self.style_scheme)
+        txtB.set_highlight_matching_brackets(False)
+        txtB.set_highlight_syntax(False)
+        txtB.place_cursor(txtB.get_start_iter())
+        self.consoleBody.set_buffer(txtB)
+
+    def refresh(self, *args):
+        self.ports = list(list_ports.grep(''))
+        self.serialLocation = self.ports[0][0] if self.ports else None
+        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        if self.serialLocation is not None:
+            self.serialConnection.baudrate = self.baudrate
+        self.gtkserialloc.get_model().clear()
+        for i in self.ports:
+            self.gtkserialloc.append_text(i[0])
+        self.gtkserialloc.set_active(0 if self.ports else -1)
+
+    def brtchange(self, widget, *args):
+        model = widget.get_model()
+        index = widget.get_active()
+        newbdrate = int(model[index][0])
+        self.baudrate = newbdrate
+        if not self.serialConnection:
+            self.serialConnection = serial.serial_for_url(self.serialLocation)
+        self.serialConnection.baudrate = newbdrate
+
+    def portchange(self, widget, *args):
+        model = widget.get_model()
+        index = widget.get_active()
+        if 0 <= index < len(model):
+            newport = model[index][0]
+            self.serialLocation = newport
+            if not self.serialConnection:
+                self.serialConnection = serial.serial_for_url(self.serialLocation)
+            self.serialConnection.port = newport
+            self.serialConnection.baudrate = self.baudrate
+
+    def destroy(self, *args):
+        self.window.hide()
+        self.shown = False
+        return True
+
+    def toggleVis(self, *args):
+        if self.shown:
+            self.shown = False
+            self.window.hide()
+        else:
+            self.shown = True
+            #self.serialLocation = list(list_ports.grep(''))[0][0]
+            txtB = gtkSourceView.Buffer()
+            txtB.set_style_scheme(self.style_scheme)
+            txtB.set_highlight_matching_brackets(False)
+            txtB.set_highlight_syntax(False)
+            txtB.place_cursor(txtB.get_start_iter())
+            self.consoleBody.set_buffer(txtB)
+            #self.serialConnection = serial.serial_for_url(self.serialLocation)
+            #self.serialConnection.baudrate = self.baudrate
+            self.window.show()
+
+    def insertImage(self, image, *args):
+        if self.serialConnection:
+            self.serialConnection.write(image)
+
+    def showImageCreator(self, *args):
+        self.imageCreator.show(self.insertImage)
+
+class ImageCreator():
+
+    def __init__(self, *args, **kwargs):
+        self.window = gtk.Window()
+        self.window.set_title('Create An Image')
+        self.window.set_icon_from_file('data/icon.png')
+        colour = gtk.gdk.color_parse('#242424')
+        self.window.modify_bg(gtk.STATE_NORMAL, colour)
+
+        self.vvbox = gtk.VBox()
+        self.table = gtk.Table(5, 5)
+        self.table.set_border_width(2)
+        self.table.set_row_spacings(2)
+        self.table.set_col_spacings(2)
+        self.buttons = {}
+
+        for y in range(5):
+            for x in range(5):
+                eb = gtk.EventBox()
+                i = gtk.Image()
+                i.set_from_file('data/selected.png')
+                i.show()
+                eb.add(i)
+                eb.hide()
+                eb.modify_bg(gtk.STATE_NORMAL, colour)
+                eb.connect_object('button-press-event', self.togglePart, (x, y))
+
+                eb2 = gtk.EventBox()
+                i2 = gtk.Image()
+                i2.set_from_file('data/unselected.png')
+                i2.show()
+                eb2.add(i2)
+                eb2.show()
+                eb2.modify_bg(gtk.STATE_NORMAL, colour)
+                eb2.connect_object('button-press-event', self.togglePart, (x, y))
+
+                self.buttons[(x, y)] = (eb, eb2)
+
+                self.table.attach(eb, x, x + 1, y, y + 1)
+                self.table.attach(eb2, x, x + 1, y, y + 1)
+
+        self.table.show()
+        self.vvbox.pack_start(self.table)
+        hbox = gtk.HBox()
+        self.confirmButton = gtk.Button("Okay")
+        self.confirmButton.show()
+        self.confirmButton.connect("clicked", self.okay)
+        hbox.pack_start(self.confirmButton, True, False)
+        cancelButton = gtk.Button("Cancel")
+        cancelButton.connect("clicked", self.destroy)
+        cancelButton.show()
+        hbox.pack_end(cancelButton, True, False)
+        hbox.show()
+        self.vvbox.pack_start(hbox)
+        self.vvbox.show()
+        self.window.add(self.vvbox)
+        self.onOkay = None
+
+        self.running = True
+        self.destoryed = False
+
+    def destroy(self, *args):
+        self.window.hide()
+
+    def okay(self, *args):
+        data = ''
+        self.window.hide()
+        for y in range(5):
+            line = []
+            for x in range(5):
+                line.append(str(int(self.buttons[(x, y)][0].props.visible)))
+            data += ','.join(line) + '\n'
+        if self.onOkay:
+            self.onOkay(data)
+
+    def show(self, onOkay, *args):
+        for i in self.buttons:
+            self.buttons[i][1].show()
+            self.buttons[i][0].hide()
+        self.onOkay = onOkay
+        self.window.show()
+
+    def hide(self, *args):
+        self.window.hide()
+
+
+    def togglePart(self, pos, *args):
+        if self.buttons[pos][0].props.visible:
+            self.buttons[pos][0].hide()
+            self.buttons[pos][1].show()
+        else:
+            self.buttons[pos][1].hide()
+            self.buttons[pos][0].show()
 
 class FullscreenToggler(object):
     def __init__(self, window, keysym=gtk.keysyms.F11):
