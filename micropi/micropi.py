@@ -42,6 +42,7 @@ import serial
 import serial.tools.list_ports as list_ports
 import string
 import random
+import struct
 
 def printError():
     data = ''
@@ -73,7 +74,7 @@ def printError():
     finally:
         print data
 
-printError()
+#printError()
 
 class EntryDialog(gtk.MessageDialog):
     def __init__(self, *args, **kwargs):
@@ -126,86 +127,6 @@ def askQ(query, prompt=None, parent=None):
     rtn=dia.run()
     dia.destroy()
     return rtn
-
-
-try:
-    HOMEDIR = os.path.expanduser('~')
-    MICROPIDIR = os.path.join(HOMEDIR, '.micropi')#-' + sys.version.split(' ')[0])
-
-    def delFolder(path):
-        if os.path.exists(path):
-            for i in os.listdir(path):
-                if os.path.isdir(os.path.join(path, i)):
-                    delFolder(os.path.join(path, i))
-                    os.rmdir(os.path.join(path, i))
-                else:
-                    os.remove(os.path.join(path, i))
-
-    FIRSTRUN = False
-
-    TABSIZE = 4
-
-    WINDOWS = os.name == 'nt'
-
-    def copyDir(path, newPath):
-        os.mkdir(newPath)
-        for i in os.listdir(path):
-            sys.stdout.write(os.path.join(path, i) + '\n')
-            if os.path.isdir(os.path.join(path, i)):
-                copyDir(os.path.join(path, i), os.path.join(newPath, i))
-            else:
-                d = open(os.path.join(path, i)).read()
-                open(os.path.join(newPath, i), 'w').write(d)
-
-    if not os.path.exists(MICROPIDIR):
-        os.mkdir(MICROPIDIR)
-
-    defualtConfig = """darkHighlight: (50, 130, 50)
-quickstart: %s
-mbitLocation: "%s"
-lightbgColour: (36, 36, 36)
-theme: "darkgreen"
-highlightColour: (73, 182, 73)
-backgroundColour: (36, 36, 36)
-fileExtention: "mpi\""""
-    if not os.path.exists(os.path.join(MICROPIDIR, 'config.conf')):
-        res = ask("Enable Quick Start?")
-        res2 = askQ("Micro:Bit Location")
-        if not res2:
-            res2 = "/media/MICROBIT"
-        print("Creating Config")
-
-        open(os.path.join(MICROPIDIR, 'config.conf'),
-             'w').write(defualtConfig % (str(res), res2))
-    configLocation = os.path.join(MICROPIDIR, 'config.conf')
-
-    if not os.path.exists(os.path.join(HOMEDIR, 'Documents')):
-        os.mkdir(os.path.join(HOMEDIR, 'Documents'))
-    if not os.path.exists(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')):
-        os.mkdir(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects'))
-    SAVEDIR = os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')
-
-    if not os.path.exists(os.path.join(MICROPIDIR, 'buildEnv')):
-        FIRSTRUN = True
-        print("Installing Build Enviroment")
-
-        f = tempfile.mktemp()
-        open(f, 'wb').write(base64.b64decode(buildenv.benv.replace('\n', '')))
-        tf = tarfile.open(f, 'r:gz')
-        tf.extractall(MICROPIDIR)
-        os.remove(f)
-
-    buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
-
-    SETTINGS = {}
-    d = open(configLocation).read().split('\n')
-    for i in d:
-        i2 = i.split(':')
-        if i:
-            SETTINGS[i[:len(i2[0])]] = eval(i[len(i2[0]) + 1:])
-except Exception as e:
-    import traceback
-    print traceback.print_exc()
 
 def uBitPoller(self):
     last = (False, False)
@@ -426,7 +347,7 @@ class MainWin:
 
         self.saveLocation = ''
 
-        exampleMenu = [(i[:-4] if i[-4:] == '.mpi' else i, (self.loadExample, '', '', i))
+        exampleMenu = [(i[:-4] if i[-4:] == SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
                    for i in os.listdir('examples')]
         menuData = [
                     ("_File", [
@@ -653,6 +574,7 @@ void app_main()
 
     def toggleQS(self, widget, *args):
         SETTINGS['quickstart'] = widget.get_active()
+        saveSettings()
 
     def autoIndentToggle(self, widget, *args):
         self.autoIndent = widget.get_active()
@@ -718,7 +640,7 @@ void app_main()
                                        buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
             _filter = gtk.FileFilter()
             _filter.set_name("Micro:Pi Files")
-            _filter.add_pattern("*.mpi")
+            _filter.add_pattern("*.%s" % SETTINGS['fileExtention'])
             fn.add_filter(_filter)
             _filter = gtk.FileFilter()
             _filter.set_name("All Files")
@@ -764,7 +686,7 @@ void app_main()
                                    buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
         _filter.set_name("Micro:Pi Files")
-        _filter.add_pattern("*.mpi")
+        _filter.add_pattern("*.%s" % SETTINGS['fileExtention'])
         fn.add_filter(_filter)
         _filter = gtk.FileFilter()
         _filter.set_name("All Files")
@@ -1260,7 +1182,6 @@ class ImageCreator():
     def hide(self, *args):
         self.window.hide()
 
-
     def togglePart(self, pos, *args):
         if self.buttons[pos][0].props.visible:
             self.buttons[pos][0].hide()
@@ -1284,6 +1205,189 @@ class FullscreenToggler(object):
             else:
                 self.window.fullscreen()
 
+class SplashScreen:
+    def __init__(self):
+        imageLoc = random.choice(os.listdir('data/splashScreens'))
+        imageSize = self.get_image_size(open(os.path.join('data/splashScreens', imageLoc), 'rb').read())
+
+        self.window = gtk.Window(gtk.WINDOW_POPUP)
+        self.window.set_title("Micro:Pi")
+        self.window.set_size_request(imageSize[0], -1)
+        #colour = gtk.gdk.color_parse('#242424')
+        #self.window.modify_bg(gtk.STATE_NORMAL, colour)
+        self.window.set_position(gtk.WIN_POS_CENTER)
+        main_vbox = gtk.VBox(False, 1)
+        self.window.add(main_vbox)
+        hbox = gtk.HBox(False, 0)
+        self.img = gtk.Image()
+        self.img.set_from_file(os.path.join('data/splashScreens', imageLoc))
+        main_vbox.pack_start(self.img, True, True)
+        self.lbl = gtk.Label('')
+        font = pango.FontDescription('Monospace 7')
+        self.lbl.modify_font(font)
+        main_vbox.pack_end(self.lbl, False, False)
+        self.window.show_all()
+    def get_image_size(self, data):
+        def is_png(data):
+            return (data[:8] == '\211PNG\r\n\032\n' and (data[12:16] == 'IHDR'))
+        if is_png(data):
+            w, h = struct.unpack('>LL', data[16:24])
+            width = int(w)
+            height = int(h)
+            return width, height
+        return -1, -1
+    def set_text(self, text):
+        self.lbl.props.label = text
+        self.refresh()
+    def refresh(self):
+        while gtk.events_pending():
+            gtk.main_iteration()
+
 if __name__ == "__main__":
+
+    ss = SplashScreen()
+
+    ss.set_text('')
+
+    try:
+        HOMEDIR = os.path.expanduser('~')
+        MICROPIDIR = os.path.join(HOMEDIR, '.micropi')#-' + sys.version.split(' ')[0])
+
+        def delFolder(path):
+            if os.path.exists(path):
+                for i in os.listdir(path):
+                    if os.path.isdir(os.path.join(path, i)):
+                        delFolder(os.path.join(path, i))
+                        os.rmdir(os.path.join(path, i))
+                    else:
+                        os.remove(os.path.join(path, i))
+
+        FIRSTRUN = False
+
+        TABSIZE = 4
+
+        WINDOWS = os.name == 'nt'
+
+        def copyDir(path, newPath):
+            os.mkdir(newPath)
+            for i in os.listdir(path):
+                sys.stdout.write(os.path.join(path, i) + '\n')
+                if os.path.isdir(os.path.join(path, i)):
+                    copyDir(os.path.join(path, i), os.path.join(newPath, i))
+                else:
+                    d = open(os.path.join(path, i)).read()
+                    open(os.path.join(newPath, i), 'w').write(d)
+
+        if not os.path.exists(MICROPIDIR):
+            os.mkdir(MICROPIDIR)
+
+        defualtConfig = """quickstart: %s
+mbitLocation: "%s"
+fileExtention: "mpi\""""
+        if not os.path.exists(os.path.join(MICROPIDIR, 'config.conf')):
+            res = ask("Enable Quick Start?")
+            res2 = askQ("Micro:Bit Location")
+            if not res2:
+                res2 = "/media/MICROBIT"
+            ss.set_text("Creating Config")
+            print("Creating Config")
+
+            open(os.path.join(MICROPIDIR, 'config.conf'),
+                 'w').write(defualtConfig % (str(res), res2))
+        configLocation = os.path.join(MICROPIDIR, 'config.conf')
+
+        if not os.path.exists(os.path.join(HOMEDIR, 'Documents')):
+            os.mkdir(os.path.join(HOMEDIR, 'Documents'))
+        if not os.path.exists(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')):
+            os.mkdir(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects'))
+        SAVEDIR = os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')
+
+        if not os.path.exists(os.path.join(MICROPIDIR, 'buildEnv')):
+            FIRSTRUN = True
+            ss.set_text("Installing Build Enviroment")
+            print("Installing Build Enviroment")
+
+            f = tempfile.mktemp()
+            open(f, 'wb').write(base64.b64decode(buildenv.benv.replace('\n', '')))
+            tf = tarfile.open(f, 'r:gz')
+            tf.extractall(MICROPIDIR)
+            os.remove(f)
+
+        buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
+
+        SETTINGS = {}
+        d = open(configLocation).read().split('\n')
+        for i in d:
+            i2 = i.split(':')
+            if i:
+                SETTINGS[i[:len(i2[0])]] = eval(i[len(i2[0]) + 1:])
+
+        def rstbuild():
+            delFolder(os.path.join(buildLocation, 'build'))
+
+        if not SETTINGS['quickstart'] or FIRSTRUN:
+            rstbuild()
+        prevLoc = os.getcwd()
+        os.chdir(buildLocation)
+        os.environ['PWD'] = buildLocation
+        os.system('yotta target bbc-microbit-classic-gcc')
+        if not SETTINGS['quickstart'] or FIRSTRUN:
+            _file = """#include "MicroBit.h"
+
+    void app_main()
+    {
+    while (1)
+    {
+        uBit.sleep(100);
+    }
+    }
+    """
+
+            open('source/main.cpp', 'w').write(_file)
+            if WINDOWS:
+                p = Popen(
+                    'cd %s & yotta --plain build' % buildLocation,
+                    shell=True,
+                    stderr=PIPE,
+                    stdin=PIPE,
+                    stdout=PIPE,
+                    close_fds = True
+                )
+            else:
+                p = Popen(
+                    ['cd %s; yotta --plain build' % buildLocation],
+                    shell=True,
+                    stderr=PIPE,
+                    stdin=PIPE,
+                    stdout=PIPE,
+                    close_fds = True
+                )
+            pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
+
+            while pipes:
+                try:
+                    d1 = pipes[1].readline()
+                    d2 = pipes[2].readline()
+                except UnexpectedEndOfStream:
+                    pass
+
+                if type(d1) != str:
+                    d1 = str(d1, encoding="utf-8")
+                if type(d2) != str:
+                    d2 = str(d2, encoding="utf-8")
+
+                if d1:
+                    ss.set_text(d1[:-1])
+                if d2:
+                    ss.set_text(d2[:-1])
+
+                if not (pipes[1].alive()) or (not pipes[2].alive()):
+                    pipes = None
+        os.chdir(prevLoc)
+
+    except Exception as e:
+        import traceback
+        print traceback.print_exc()
     main = MainWin()
+    ss.window.destroy()
     main.main()
