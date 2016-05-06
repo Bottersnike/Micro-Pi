@@ -347,7 +347,7 @@ class MainWin:
 
         self.saveLocation = ''
 
-        exampleMenu = [(i[:-4] if i[-4:] == SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
+        exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
                    for i in os.listdir('examples')]
         menuData = [
                     ("_File", [
