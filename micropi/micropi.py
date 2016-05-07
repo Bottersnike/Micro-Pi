@@ -74,8 +74,6 @@ def printError():
     finally:
         print data
 
-#printError()
-
 class EntryDialog(gtk.MessageDialog):
     def __init__(self, *args, **kwargs):
         if 'default_value' in kwargs:
@@ -218,7 +216,7 @@ def updateTitle(self):
         title = '%s%s - %s - %s' % (start, fn, full, end)
 
         if title != lastTitle:
-            self.window.set_title(title)
+            gobject.idle_add(self.window.set_title, title)
 
         lastTitle = title
 
