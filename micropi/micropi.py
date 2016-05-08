@@ -44,6 +44,14 @@ import string
 import random
 import struct
 
+OPENWINDOWS = []
+uBitUploading = False
+uBitFound = False
+mbedBuilding = False
+mbedUploading = False
+pipes = None
+WORKINGDIR = os.getcwd()
+
 def printError():
     data = ''
     try:
@@ -126,31 +134,41 @@ def askQ(query, prompt=None, parent=None):
     dia.destroy()
     return rtn
 
-def uBitPoller(self):
-    last = (False, False)
+def uBitPoller():
+    global uBitFound
+    global uBitUploading
+    last = {}
     while True:
-        self.uBitFound = os.path.exists(SETTINGS['mbitLocation'])
-        if not (self.uBitUploading and self.uBitFound):
-            if self.uBitFound and not last[0]:
-                gobject.idle_add(self.indicator.set_from_file, "data/uBitFound.png")
-            elif last[0] and not self.uBitFound:
-                gobject.idle_add(self.indicator.set_from_file, "data/uBitNotFound.png")
-                self.uBitUploading = False
-        else:
-            gobject.idle_add(self.indicator.set_from_file, "data/uBitUploading.png")
+        for self in OPENWINDOWS:
+            if self not in last:
+                last[self] = (False, False)
+            uBitFound = os.path.exists(SETTINGS['mbitLocation'])
+            if not (uBitUploading and uBitFound):
+                if uBitFound and not last[self][0]:
+                    gobject.idle_add(self.indicator.set_from_file, "data/uBitFound.png")
+                elif last[self][0] and not uBitFound:
+                    gobject.idle_add(self.indicator.set_from_file, "data/uBitNotFound.png")
+                    uBitUploading = False
+            else:
+                gobject.idle_add(self.indicator.set_from_file, "data/uBitUploading.png")
+            last[self] = (uBitFound, uBitUploading)
         time.sleep(0.2)
-        last = (self.uBitFound, self.uBitUploading)
 
-def pipePoller(self):
+def pipePoller():
+    global mbedUploading
+    global mbedBuilding
+    global uBitUploading
+    global uBitFound
+    global pipes
     def addText(self, text):
-#        pass
-        tb = self.consoleBody.get_buffer()
-        tb.insert(tb.get_end_iter(), text)
+        for self in OPENWINDOWS:
+            tb = self.consoleBody.get_buffer()
+            tb.insert(tb.get_end_iter(), text)
     while True:
-        if self.pipes:
+        if pipes:
             try:
-                d1 = self.pipes[1].readline()
-                d2 = self.pipes[2].readline()
+                d1 = pipes[1].readline()
+                d2 = pipes[2].readline()
             except UnexpectedEndOfStream:
                 pass
 
@@ -159,29 +177,22 @@ def pipePoller(self):
             if type(d2) != str:
                 d2 = str(d2, encoding="utf-8")
 
-            tb = self.consoleBody.get_buffer()
-            tb.insert(tb.get_end_iter(), d1 + d2)
-            #gobject.idle_add(addText, self, d1 + d2)
+            gobject.idle_add(addText, self, d1 + d2)
 
-            if not (self.pipes[1].alive() or self.pipes[2].alive()):
-                self.pipes = None
-                self.mbedBuilding = False
-                os.chdir(self.prevLoc)
+            if not (pipes[1].alive() or pipes[2].alive()):
+                pipes = None
+                mbedBuilding = False
+                os.chdir(WORKINGDIR)
                 if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
-                    tb = self.consoleBody.get_buffer()
-                    tb.insert(tb.get_end_iter(), "Done!\n")
-                    #gobject.idle_add(addText, self, "Done!\n")
-                    if self.mbedUploading and self.uBitFound:
+                    gobject.idle_add(addText, self, "Done!\n")
+                    if mbedUploading and uBitFound:
                         gobject.idle_add(addText, self, "Uploading!\n")
-                        tb = self.consoleBody.get_buffer()
-                        tb.insert(tb.get_end_iter(), "Uploading!\n")
-                        #self.uBitUploading = True
                         thread = Thread(target=upload, args=(self,))
                         thread.daemon = True
                         thread.start()
-                    elif self.mbedUploading:
-                        self.uBitUploading = False
-                        self.mbedUploading = False
+                    elif mbedUploading:
+                        uBitUploading = False
+                        mbedUploading = False
                         gobject.idle_add(self.message, """Cannot upload!
 Micro:Bit not found!
 Check it is plugged in and
@@ -192,33 +203,37 @@ with your code!
 It is advised to scroll
 back through the console
 to find out what the error is!""")
-                    self.uBitUploading = False
-                    self.mbedUploading = False
+                    uBitUploading = False
+                    mbedUploading = False
         else:
             time.sleep(0.1)
 
 def upload(self):
+    global mbedUploading
     end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation).read()
     open(
         '%s/microbit-combined.hex' % SETTINGS['mbitLocation'],
         'w'
     ).write(end)
-    self.mbedUploading = False
+    mbedUploading = False
 
-def updateTitle(self):
-    lastTitle = ''
+def updateTitle():
+    lastTitle = {}
     while True:
-        start = '*' if self.getModified() else ''
-        fn = os.path.basename(self.saveLocation)
-        full = os.path.dirname(self.saveLocation)
-        end = 'Micro:Pi'
+        for self in OPENWINDOWS:
+            start = '*' if self.getModified() else ''
+            fn = os.path.basename(self.saveLocation)
+            full = os.path.dirname(self.saveLocation)
+            end = 'Micro:Pi'
 
-        title = '%s%s - %s - %s' % (start, fn, full, end)
+            title = '%s%s - %s - %s' % (start, fn, full, end)
 
-        if title != lastTitle:
-            gobject.idle_add(self.window.set_title, title)
+            if self not in lastTitle:
+                lastTitle[self] = ''
+            if title != lastTitle[self]:
+                gobject.idle_add(self.window.set_title, title)
 
-        lastTitle = title
+            lastTitle[self] = title
 
         time.sleep(0.1)
 
@@ -312,6 +327,7 @@ class UnexpectedEndOfStream(BaseException):
 
 class MainWin:
     def __init__(self, fileData=None):
+        self.active = True
         mgr = gtkSourceView.style_scheme_manager_get_default()
         self.style_scheme = mgr.get_scheme('oblivion')
         self.language_manager = gtkSourceView.language_manager_get_default()
@@ -333,11 +349,6 @@ class MainWin:
         self.table = gtk.Table(5, 1, False)
         self.table.show()
         self.window.add(self.table)
-
-        self.uBitUploading = False
-        self.mbedBuilding = False
-        self.mbedUploading = False
-        self.uBitFound = False
 
         self.tabWidth = 4
         self.autoIndent = True
@@ -514,7 +525,6 @@ void app_main()
         self.table.attach(self.consoleFrame, 0, 1, 4, 5)
 
         self.setSaved()
-        self.pipes = None
 
         self.window.show()
 
@@ -648,16 +658,14 @@ void app_main()
 
             resp = fn.run()
             if resp == gtk.RESPONSE_OK:
-                text = open(fn.get_filename()).read()
-                data = pickle.loads(text)
                 try:
-                    while len(self.notebook):
-                        self.notebook.remove_page(0)
-                    for page in data:
-                        self.addNotebookPage(*page)
+                    text = open(fn.get_filename()).read()
+                    data = pickle.loads(text)
+                    mw = MainWin(data)
                     yes = True
-                    self.saveLocation = fn.get_filename()
-                    self.setSaved()
+                    mw.saveLocation = fn.get_filename()
+                    mw.setSaved()
+                    OPENWINDOWS.append(mw)
                 except:
                     yes = False
             fn.destroy()
@@ -710,7 +718,14 @@ void app_main()
 
     def destroy(self, *args):
         if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-            gtk.main_quit()
+            self.active = False
+            self.window.hide()
+            kill = True
+            for i in OPENWINDOWS:
+                if i.active:
+                    kill = False
+            if kill:
+                gtk.main_quit()
             return False
         return True
 
@@ -744,13 +759,11 @@ void app_main()
                 text = open(os.path.join('examples', example)).read()
                 try:
                     data = pickle.loads(text)
-                    while len(self.notebook):
-                        self.notebook.remove_page(0)
-                    for page in data:
-                        self.addNotebookPage(*page)
+                    mw = MainWin(data)
                     yes = True
-                    self.setSaved()
-                    self.saveLocation = ''
+                    mw.saveLocation = fn.get_filename()
+                    mw.setSaved()
+                    OPENWINDOWS.append(mw)
                 except:
                     yes = False
 
@@ -777,7 +790,12 @@ void app_main()
                                'build/bbc-microbit-classic-gcc/source/'))
 
     def startBuild(self, *args):
-        if not (self.mbedUploading or self.mbedBuilding):
+        global mbedUploading
+        global mbedBuilding
+        global uBitUploading
+        global uBitFound
+        global pipes
+        if not (mbedUploading or mbedBuilding):
             txtB = gtkSourceView.Buffer()
             txtB.set_style_scheme(self.style_scheme)
             txtB.set_highlight_matching_brackets(False)
@@ -785,7 +803,7 @@ void app_main()
             txtB.place_cursor(txtB.get_start_iter())
 
             self.consoleBody.props.buffer = txtB
-            self.mbedBuilding = True
+            mbedBuilding = True
             self.clearBuild()
             for f in self.notebook:
                 fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
@@ -794,7 +812,6 @@ void app_main()
                 open(os.path.join(buildLocation, 'source/%s' %
                                   fn), 'w').write(text)
 
-            self.prevLoc = os.getcwd()
             os.chdir(buildLocation)
             os.environ['PWD'] = buildLocation
 
@@ -816,10 +833,15 @@ void app_main()
                     stdout=PIPE,
                     close_fds = True
                 )
-            self.pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
+            pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
     def startBuildAndUpload(self, *args):
-        if not (self.mbedUploading or self.mbedBuilding):
+        global mbedUploading
+        global mbedBuilding
+        global uBitUploading
+        global uBitFound
+        global pipes
+        if not (mbedUploading or mbedBuilding):
             txtB = gtkSourceView.Buffer()
             txtB.set_style_scheme(self.style_scheme)
             txtB.set_highlight_matching_brackets(False)
@@ -827,8 +849,8 @@ void app_main()
             txtB.place_cursor(txtB.get_start_iter())
 
             self.consoleBody.props.buffer = txtB
-            self.mbedBuilding = True
-            self.mbedUploading = True
+            mbedBuilding = True
+            mbedUploading = True
             self.clearBuild()
             for f in self.notebook:
                 fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
@@ -837,7 +859,6 @@ void app_main()
                 open(os.path.join(buildLocation, 'source/%s' %
                                   fn), 'w').write(text)
 
-            self.prevLoc = os.getcwd()
             os.chdir(buildLocation)
             os.environ['PWD'] = buildLocation
 
@@ -859,7 +880,7 @@ void app_main()
                     stdout=PIPE,
                     close_fds = True
                 )
-            self.pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
+            pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
     def importFile(self, *args):
         fn = gtk.FileChooserDialog(title=None,
@@ -885,9 +906,14 @@ void app_main()
         fn.destroy()
 
     def forceUpload(self, *args):
+        global mbedUploading
+        global mbedBuilding
+        global uBitUploading
+        global uBitFound
+        global pipes
         if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
-            if (not self.mbedBuilding) and (not self.mbedUploading):
-                self.uBitUploading = True
+            if (not mbedBuilding) and (not mbedUploading):
+                uBitUploading = True
                 thread = Thread(target=upload, args=(self,))
                 thread.daemon = True
                 thread.start()
@@ -912,13 +938,13 @@ void app_main()
             i.get_child().props.buffer.set_modified(False)
 
     def main(self):
-        thread = Thread(target=uBitPoller, args=(self,))
+        thread = Thread(target=uBitPoller)
         thread.daemon = True
         thread.start()
-        thread = Thread(target=pipePoller, args=(self,))
+        thread = Thread(target=pipePoller)
         thread.daemon = True
         thread.start()
-        thread = Thread(target=updateTitle, args=(self,))
+        thread = Thread(target=updateTitle)
         thread.daemon = True
         thread.start()
         gtk.main()
@@ -1083,15 +1109,12 @@ class SerialConsole:
             self.window.hide()
         else:
             self.shown = True
-            #self.serialLocation = list(list_ports.grep(''))[0][0]
             txtB = gtkSourceView.Buffer()
             txtB.set_style_scheme(self.style_scheme)
             txtB.set_highlight_matching_brackets(False)
             txtB.set_highlight_syntax(False)
             txtB.place_cursor(txtB.get_start_iter())
             self.consoleBody.set_buffer(txtB)
-            #self.serialConnection = serial.serial_for_url(self.serialLocation)
-            #self.serialConnection.baudrate = self.baudrate
             self.window.show()
 
     def insertImage(self, image, *args):
@@ -1214,11 +1237,11 @@ class SplashScreen:
         imageLoc = random.choice(os.listdir('data/splashScreens'))
         imageSize = self.get_image_size(open(os.path.join('data/splashScreens', imageLoc), 'rb').read())
 
-        self.window = gtk.Window(gtk.WINDOW_POPUP)
+        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window.set_decorated(False)
         self.window.set_title("Micro:Pi")
+        self.window.set_icon_from_file('data/icon.png')
         self.window.set_size_request(imageSize[0], -1)
-        #colour = gtk.gdk.color_parse('#242424')
-        #self.window.modify_bg(gtk.STATE_NORMAL, colour)
         self.window.set_position(gtk.WIN_POS_CENTER)
         main_vbox = gtk.VBox(False, 1)
         self.window.add(main_vbox)
@@ -1230,7 +1253,9 @@ class SplashScreen:
         font = pango.FontDescription('Monospace 7')
         self.lbl.modify_font(font)
         main_vbox.pack_end(self.lbl, False, False)
+        self.refresh()
         self.window.show_all()
+        self.refresh()
     def get_image_size(self, data):
         def is_png(data):
             return (data[:8] == '\211PNG\r\n\032\n' and (data[12:16] == 'IHDR'))
@@ -1252,10 +1277,12 @@ if __name__ == "__main__":
     ss = SplashScreen()
 
     ss.set_text('')
+    time.sleep(0.2)
+    ss.refresh()
 
     try:
         HOMEDIR = os.path.expanduser('~')
-        MICROPIDIR = os.path.join(HOMEDIR, '.micropi')#-' + sys.version.split(' ')[0])
+        MICROPIDIR = os.path.join(HOMEDIR, '.micropi')
 
         def delFolder(path):
             if os.path.exists(path):
@@ -1333,8 +1360,7 @@ fileExtention: "mpi\""""
             rstbuild()
         prevLoc = os.getcwd()
         os.chdir(buildLocation)
-        os.environ['PWD'] = buildLocation
-        os.system('yotta target bbc-microbit-classic-gcc')
+        os.system('cd %s; yotta target bbc-microbit-classic-gcc' % buildLocation)
         if not SETTINGS['quickstart'] or FIRSTRUN:
             _file = """#include "MicroBit.h"
 
@@ -1393,5 +1419,6 @@ fileExtention: "mpi\""""
         import traceback
         print traceback.print_exc()
     main = MainWin()
+    OPENWINDOWS.append(main)
     ss.window.destroy()
     main.main()
