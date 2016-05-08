@@ -2,3 +2,4 @@ dist
 build
 setup.py
 MicroPi.egg-info
+micropi.spec
