@@ -761,7 +761,7 @@ void app_main()
                     data = pickle.loads(text)
                     mw = MainWin(data)
                     yes = True
-                    mw.saveLocation = fn.get_filename()
+                    mw.saveLocation = ''
                     mw.setSaved()
                     OPENWINDOWS.append(mw)
                 except:
