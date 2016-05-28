@@ -29,7 +29,7 @@ from threading import Thread
 import time
 import os
 from subprocess import PIPE, Popen
-from gtksourceview2 import View as SourceView
+from gtksourceview2 import View as SourceView, Mark
 import gtksourceview2 as gtkSourceView
 from Queue import Queue, Empty
 import tempfile
@@ -43,6 +43,7 @@ import serial.tools.list_ports as list_ports
 import string
 import random
 import struct
+import errorParser
 
 OPENWINDOWS = []
 uBitUploading = False
@@ -154,7 +155,8 @@ def uBitPoller():
             last[self] = (uBitFound, uBitUploading)
         time.sleep(0.2)
 
-def pipePoller():
+def pipePoller(self):
+    import sys
     global mbedUploading
     global mbedBuilding
     global uBitUploading
@@ -164,6 +166,7 @@ def pipePoller():
         for self in OPENWINDOWS:
             tb = self.consoleBody.get_buffer()
             tb.insert(tb.get_end_iter(), text)
+    bufferdata = ''
     while True:
         if pipes:
             try:
@@ -176,10 +179,23 @@ def pipePoller():
                 d1 = str(d1, encoding="utf-8")
             if type(d2) != str:
                 d2 = str(d2, encoding="utf-8")
+            sys.stdout.write(d1)
+            sys.stdout.write(d2)
+            bufferdata += d1 + d2
+            sys.stdout.flush()
 
             gobject.idle_add(addText, self, d1 + d2)
 
             if not (pipes[1].alive() or pipes[2].alive()):
+                errors = errorParser.parse(bufferdata)
+                bufferdata = ''
+
+                for e in errors:
+                    print 'Error:', e
+                    gobject.idle_add(self.message, """Error in file %s!
+At line %d, index %d:
+
+%s""" % e)
                 pipes = None
                 mbedBuilding = False
                 os.chdir(WORKINGDIR)
@@ -198,13 +214,9 @@ Micro:Bit not found!
 Check it is plugged in and
 Micro:Pi knows where to find it.""")
                 else:
-                    gobject.idle_add(self.message, """There is an error
-with your code!
-It is advised to scroll
-back through the console
-to find out what the error is!""")
                     uBitUploading = False
                     mbedUploading = False
+            time.sleep(0.1)
         else:
             time.sleep(0.1)
 
@@ -270,6 +282,15 @@ def saveSettings():
         data += '%s: %s\n' % (str(i), p2)
     open(configLocation, 'w').write(data)
 
+def delFolder(path):
+    if os.path.exists(path):
+        for i in os.listdir(path):
+            if os.path.isdir(os.path.join(path, i)):
+                delFolder(os.path.join(path, i))
+                os.rmdir(os.path.join(path, i))
+            else:
+                os.remove(os.path.join(path, i))
+
 class NBSR:
     """
     A wrapper arround PIPES to make them easier to use
@@ -329,7 +350,7 @@ class MainWin:
     def __init__(self, fileData=None):
         self.active = True
         mgr = gtkSourceView.style_scheme_manager_get_default()
-        self.style_scheme = mgr.get_scheme('oblivion')
+        self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
         self.language_manager = gtkSourceView.language_manager_get_default()
         self.language = self.language_manager.get_language('cpp')
 
@@ -339,8 +360,11 @@ class MainWin:
         self.window.set_title('Micro:Pi')
         self.window.set_icon_from_file('data/icon.png')
         self.window.resize(750, 500)
-        colour = gtk.gdk.color_parse('#242424')
-        self.window.modify_bg(gtk.STATE_NORMAL, colour)
+        #if SETTINGS['theme'] == 'dark':
+            #colour = gtk.gdk.color_parse('#242424')
+        #else:
+            #colour = gtk.gdk.color_parse('#E5E5E5')
+        #self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.window.connect("delete_event", self.destroy)
 
@@ -384,6 +408,10 @@ class MainWin:
                                ("Preference_s", [
                                                  ('Set Micro:Bit Location', (self.setUBitLoc, '', '')),
                                                  ("Enable _Quick Statrt", (self.toggleQS, '', '', '', 'checkbox', SETTINGS['quickstart'])),
+                                                 ("_Theme", [
+                                                             ("Light", (self.setTheme, '', '', '', 'radio', SETTINGS['theme'] == 'light', 'radioGroup2', 'light')),
+                                                             ("Dark", (self.setTheme, '', '', '', 'radio', SETTINGS['theme'] == 'dark', 'radioGroup2', 'dark')),
+                                                            ])
                                                 ]
                                ),
                               ]
@@ -526,6 +554,8 @@ void app_main()
 
         self.setSaved()
 
+        self.setTheme(None, SETTINGS['theme'])
+
         self.window.show()
 
     def website(self, *args):
@@ -599,6 +629,25 @@ void app_main()
             self.tabWidth = width
             for f in self.notebook:
                 f.get_child().set_tab_width(width)
+
+    def setTheme(self, widget, theme, *args):
+        if widget is None or widget.get_active():
+            SETTINGS['theme'] = theme
+            saveSettings()
+            if SETTINGS['theme'] == 'dark':
+                colour = gtk.gdk.color_parse('#242424')
+            else:
+                colour = gtk.gdk.color_parse('#E5E5E5')
+            self.window.modify_bg(gtk.STATE_NORMAL, colour)
+
+            mgr = gtkSourceView.style_scheme_manager_get_default()
+            self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+            for f in self.notebook:
+                f.get_child().props.buffer.set_style_scheme(self.style_scheme)
+            self.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
+            self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
+            self.serialConsole.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
+            self.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
 
     def addNotebookPage(self, title, content):
         area = gtk.ScrolledWindow()
@@ -755,21 +804,21 @@ void app_main()
 
     def loadExample(self, example):
         if os.path.exists(os.path.join('examples', example)):
-            if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-                text = open(os.path.join('examples', example)).read()
-                try:
-                    data = pickle.loads(text)
-                    mw = MainWin(data)
-                    yes = True
-                    mw.saveLocation = ''
-                    mw.setSaved()
-                    OPENWINDOWS.append(mw)
-                except:
-                    yes = False
+            #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
+            text = open(os.path.join('examples', example)).read()
+            try:
+                data = pickle.loads(text)
+                mw = MainWin(data)
+                yes = True
+                mw.saveLocation = ''
+                mw.setSaved()
+                OPENWINDOWS.append(mw)
+            except:
+                yes = False
 
     def newProject(self, *args):
-        if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-            fileData = [('main.cpp', """#include "header.h"
+        #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
+        fileData = [('main.cpp', """#include "header.h"
 #include "MicroBit.h"
 
 void app_main()
@@ -777,10 +826,10 @@ void app_main()
 
 }
 """), ('header.h', '')]
-            while len(self.notebook):
-                self.notebook.remove_page(0)
-            for page in fileData:
-                self.addNotebookPage(*page)
+        mw = MainWin(fileData)
+        mw.saveLocation = ''
+        mw.setSaved()
+        OPENWINDOWS.append(mw)
 
     def clearBuild(self):
         if os.path.exists(os.path.join(buildLocation, 'source/')):
@@ -941,7 +990,7 @@ void app_main()
         thread = Thread(target=uBitPoller)
         thread.daemon = True
         thread.start()
-        thread = Thread(target=pipePoller)
+        thread = Thread(target=pipePoller, args=(self,))
         thread.daemon = True
         thread.start()
         thread = Thread(target=updateTitle)
@@ -965,7 +1014,7 @@ class SerialConsole:
         thread.start()
 
         mgr = gtkSourceView.style_scheme_manager_get_default()
-        self.style_scheme = mgr.get_scheme('oblivion')
+        self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
 
         self.window = gtk.Window()
         self.window.set_title('Serial Monitor')
@@ -1272,7 +1321,16 @@ class SplashScreen:
         while gtk.events_pending():
             gtk.main_iteration()
 
-if __name__ == "__main__":
+def main():
+    global SETTINGS
+    global configLocation
+    global buildLocation
+    global HOMEDIR
+    global MICROPIDIR
+    global WINDOWS
+    global SAVEDIR
+
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
     ss = SplashScreen()
 
@@ -1283,15 +1341,6 @@ if __name__ == "__main__":
     try:
         HOMEDIR = os.path.expanduser('~')
         MICROPIDIR = os.path.join(HOMEDIR, '.micropi')
-
-        def delFolder(path):
-            if os.path.exists(path):
-                for i in os.listdir(path):
-                    if os.path.isdir(os.path.join(path, i)):
-                        delFolder(os.path.join(path, i))
-                        os.rmdir(os.path.join(path, i))
-                    else:
-                        os.remove(os.path.join(path, i))
 
         FIRSTRUN = False
 
@@ -1414,7 +1463,6 @@ fileExtention: "mpi\""""
                 if not (pipes[1].alive()) or (not pipes[2].alive()):
                     pipes = None
         os.chdir(prevLoc)
-
     except Exception as e:
         import traceback
         print traceback.print_exc()
@@ -1422,3 +1470,6 @@ fileExtention: "mpi\""""
     OPENWINDOWS.append(main)
     ss.window.destroy()
     main.main()
+
+if __name__ == "__main__":
+    main()
