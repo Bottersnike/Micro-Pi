@@ -733,7 +733,13 @@ void app_main()
             if resp == gtk.RESPONSE_OK:
                 try:
                     text = open(fn.get_filename()).read()
-                    data = pickle.loads(text)
+                    try:
+                        d = text.replace("\n", "")
+                        d = base64.b64decode(d)
+                        print d
+                        data = pickle.loads(d)
+                    except:
+                        data = pickle.loads(text)
                     mw = MainWin(data)
                     yes = True
                     mw.saveLocation = fn.get_filename()
@@ -752,7 +758,8 @@ void app_main()
             tb = f.get_child().get_buffer()
             txt = tb.get_text(*tb.get_bounds())
             files[fn] = txt
-        data = pickle.dumps(files)
+        data = base64.b64encode(pickle.dumps(files))
+        data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
         if self.saveLocation:
             open(self.saveLocation, 'w').write(data)
             self.setSaved()
@@ -781,7 +788,8 @@ void app_main()
             tb = f.get_child().get_buffer()
             txt = tb.get_text(*tb.get_bounds())
             files.append([fin, txt])
-        data = pickle.dumps(files)
+        data = base64.b64encode(pickle.dumps(files))
+        data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
 
         if resp == gtk.RESPONSE_OK:
             fp = fn.get_filename()
@@ -834,7 +842,10 @@ void app_main()
             #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
             text = open(example).read()
             try:
-                data = pickle.loads(text)
+                try:
+                    data = pickle.loads(base64.b64decode(text).replace("\n", ""))
+                except:
+                    data = pickle.loads(text)
                 mw = MainWin(data)
                 yes = True
                 mw.saveLocation = ''
