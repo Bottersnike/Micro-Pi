@@ -34,7 +34,6 @@ import gtksourceview2 as gtkSourceView
 from Queue import Queue, Empty
 import tempfile
 import base64
-import buildenv
 import tarfile
 import platform
 import webbrowser
@@ -199,7 +198,7 @@ At line %d, index %d:
                 pipes = None
                 mbedBuilding = False
                 os.chdir(WORKINGDIR)
-                if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex' % buildLocation):
+                if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation):
                     gobject.idle_add(addText, self, "Done!\n")
                     if mbedUploading and uBitFound:
                         gobject.idle_add(addText, self, "Uploading!\n")
@@ -222,10 +221,10 @@ Micro:Pi knows where to find it.""")
 
 def upload(self):
     global mbedUploading
-    if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex' % buildLocation):
-        end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex' % buildLocation).read()
+    if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation):
+        end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation).read()
         open(
-            '%s/microbit-samples-combined.hex' % SETTINGS['mbitLocation'],
+            '%s/microbit-build-combined.hex' % SETTINGS['mbitLocation'],
             'w'
         ).write(end)
     else:
@@ -293,6 +292,10 @@ def delFolder(path):
                 os.rmdir(os.path.join(path, i))
             else:
                 os.remove(os.path.join(path, i))
+
+def setupBEnv():
+    tf = tarfile.open("buildenv.tar.gz", 'r:gz')
+    tf.extractall(MICROPIDIR)
 
 class NBSR:
     """
@@ -983,7 +986,7 @@ void app_main()
         global uBitUploading
         global uBitFound
         global pipes
-        if os.path.exists("%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex" % buildLocation):
+        if os.path.exists("%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex" % buildLocation):
             if (not mbedBuilding) and (not mbedUploading):
                 uBitUploading = True
                 thread = Thread(target=upload, args=(self,))
@@ -1410,11 +1413,12 @@ fileExtention: "mpi\""""
             ss.set_text("Installing Build Enviroment")
             print("Installing Build Enviroment")
 
-            f = tempfile.mktemp()
-            open(f, 'wb').write(base64.b64decode(buildenv.benv.replace('\n', '')))
-            tf = tarfile.open(f, 'r:gz')
-            tf.extractall(MICROPIDIR)
-            os.remove(f)
+            setupBEnv()
+            #f = tempfile.mktemp()
+            #open(f, 'wb').write(base64.b64decode(buildenv.benv.replace('\n', '')))
+            #tf = tarfile.open(f, 'r:gz')
+            #tf.extractall(MICROPIDIR)
+            #os.remove(f)
 
         buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
 
