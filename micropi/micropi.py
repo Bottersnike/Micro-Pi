@@ -43,6 +43,8 @@ import string
 import random
 import struct
 import errorParser
+import json
+import sys
 
 OPENWINDOWS = []
 uBitUploading = False
@@ -275,14 +277,12 @@ def serialPoller(self):
                 pass
             time.sleep(0.1)
 
+def loadSettings():
+    return json.load(open(configLocation))
+
 def saveSettings():
-    data = ''
-    for i in SETTINGS.keys():
-        p2 = str(SETTINGS[i])
-        if type(SETTINGS[i]) == str or type(SETTINGS[i]) == type(u''):
-            p2 = '"%s"' % p2
-        data += '%s: %s\n' % (str(i), p2)
-    open(configLocation, 'w').write(data)
+    json.dump(SETTINGS, open(configLocation, 'w'),
+              sort_keys=True, indent=4, separators=(',', ': '))
 
 def delFolder(path):
     if os.path.exists(path):
@@ -296,6 +296,7 @@ def delFolder(path):
 def setupBEnv():
     tf = tarfile.open("buildenv.tar.gz", 'r:gz')
     tf.extractall(MICROPIDIR)
+
 
 class NBSR:
     """
@@ -1387,10 +1388,13 @@ def main():
         if not os.path.exists(MICROPIDIR):
             os.mkdir(MICROPIDIR)
 
-        defualtConfig = """quickstart: %s
-mbitLocation: "%s"
-fileExtention: "mpi\""""
-        if not os.path.exists(os.path.join(MICROPIDIR, 'config.conf')):
+        defualtConfig = """{
+    "fileExtention": "mpi",
+    "mbitLocation": "%s",
+    "quickstart": %s,
+    "theme": "dark"
+}"""
+        if not os.path.exists(os.path.join(MICROPIDIR, 'config.json')):
             res = ask("Enable Quick Start?")
             res2 = askQ("Micro:Bit Location")
             if not res2:
@@ -1398,9 +1402,9 @@ fileExtention: "mpi\""""
             ss.set_text("Creating Config")
             print("Creating Config")
 
-            open(os.path.join(MICROPIDIR, 'config.conf'),
-                 'w').write(defualtConfig % (str(res), res2))
-        configLocation = os.path.join(MICROPIDIR, 'config.conf')
+            open(os.path.join(MICROPIDIR, 'config.json'),
+                 'w').write(defualtConfig % (res2, str(res).lower()))
+        configLocation = os.path.join(MICROPIDIR, 'config.json')
 
         if not os.path.exists(os.path.join(HOMEDIR, 'Documents')):
             os.mkdir(os.path.join(HOMEDIR, 'Documents'))
@@ -1422,12 +1426,7 @@ fileExtention: "mpi\""""
 
         buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
 
-        SETTINGS = {}
-        d = open(configLocation).read().split('\n')
-        for i in d:
-            i2 = i.split(':')
-            if i:
-                SETTINGS[i[:len(i2[0])]] = eval(i[len(i2[0]) + 1:])
+        SETTINGS = loadSettings()
 
         def rstbuild():
             delFolder(os.path.join(buildLocation, 'build'))
@@ -1495,6 +1494,7 @@ MicroBit uBit;
     except Exception as e:
         import traceback
         print traceback.print_exc()
+        sys.exit(1)
     main = MainWin()
     OPENWINDOWS.append(main)
     ss.window.destroy()
