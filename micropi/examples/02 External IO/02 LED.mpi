@@ -1,0 +1,12 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aS'#include "header.h"\n#include "MicroBit.h"\n\nvoid app_main()\n{\n\twhile (1)\n\t{\n\t\tuBit.io.P0.setDigitalValue(1);\n\t\tuBit.sleep(100);\n\t\n\t\tuBit.io.P0.setDigitalValue(0);\n\t\tuBit.sleep(100);\n\t}\n}\n'
+p3
+aa(lp4
+S'header.h'
+p5
+aS''
+p6
+aa.

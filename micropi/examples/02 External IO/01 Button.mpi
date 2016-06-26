@@ -1,0 +1,7 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aS'/*\n * Button.mpi\n * \n * Copyright 2016 Nathan Taylor <bottersnike237@gmail.com>\n * \n * This program is free software; you can redistribute it and/or modify\n * it under the terms of the GNU General Public License as published by\n * the Free Software Foundation; either version 2 of the License, or\n * (at your option) any later version.\n * \n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Public License for more details.\n * \n * You should have received a copy of the GNU General Public License\n * along with this program; if not, write to the Free Software\n * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,\n * MA 02110-1301, USA.\n * \n * This program will by default display nothing on the BBC Micro:Bit\'s screen,\n * but when you press a button, it will show that button\'s name (A or B)\n */\n#include "MicroBit.h"\n\nvoid app_main()\n{\n\twhile (1)\n\t{\n\t\tif (uBit.buttonB.isPressed()){\n\t\t\tuBit.display.print(\'B\');\n\t\t} else if (uBit.buttonA.isPressed()){\n\t\t\tuBit.display.print(\'A\');\n\t\t} else {\n\t\t\tuBit.display.clear();\n\t\t}\n\t\tuBit.sleep(100);\n\t}\n}\n'
+p3
+aa.

@@ -199,7 +199,7 @@ At line %d, index %d:
                 pipes = None
                 mbedBuilding = False
                 os.chdir(WORKINGDIR)
-                if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
+                if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex' % buildLocation):
                     gobject.idle_add(addText, self, "Done!\n")
                     if mbedUploading and uBitFound:
                         gobject.idle_add(addText, self, "Uploading!\n")
@@ -222,11 +222,14 @@ Micro:Pi knows where to find it.""")
 
 def upload(self):
     global mbedUploading
-    end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation).read()
-    open(
-        '%s/microbit-combined.hex' % SETTINGS['mbitLocation'],
-        'w'
-    ).write(end)
+    if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex' % buildLocation):
+        end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex' % buildLocation).read()
+        open(
+            '%s/microbit-samples-combined.hex' % SETTINGS['mbitLocation'],
+            'w'
+        ).write(end)
+    else:
+        gobject.idle_add(self.message, """No build files avaliable""")
     mbedUploading = False
 
 def updateTitle():
@@ -380,8 +383,25 @@ class MainWin:
 
         self.saveLocation = ''
 
-        exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
-                   for i in os.listdir('examples')]
+        def loadEXPMen(path):
+            men = []
+            p = os.listdir(path)
+            p.sort()
+            for i in p:
+                if not os.path.isdir(os.path.join(path, i)):
+                    if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention']:
+                        ni = i[:-(len(SETTINGS['fileExtention'])+1)]
+                    else:
+                        ni = i
+                    men.append((ni, (self.loadExample, '', '', os.path.join(path, i))))
+                else:
+                    men.append((i, loadEXPMen(os.path.join(path, i))))
+            return men
+
+        #exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
+                   #for i in os.listdir('examples')]
+        exampleMenu = loadEXPMen("examples")
+
         menuData = [
                     ("_File", [
                               ("_New Project", (self.newProject, gtk.STOCK_NEW, '<Control>N')),
@@ -760,7 +780,10 @@ void app_main()
         data = pickle.dumps(files)
 
         if resp == gtk.RESPONSE_OK:
-            open(fn.get_filename(), 'w').write(data)
+            fp = fn.get_filename()
+            if fp[-4:] != ".mpi":
+                fp = fp + ".mpi"
+            open(fp, 'w').write(data)
             self.setSaved()
             self.saveLocation = fn.get_filename()
         fn.destroy()
@@ -803,9 +826,9 @@ void app_main()
         return rtn
 
     def loadExample(self, example):
-        if os.path.exists(os.path.join('examples', example)):
+        if os.path.exists(example):
             #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-            text = open(os.path.join('examples', example)).read()
+            text = open(example).read()
             try:
                 data = pickle.loads(text)
                 mw = MainWin(data)
@@ -818,7 +841,7 @@ void app_main()
 
     def newProject(self, *args):
         #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-        fileData = [('main.cpp', """#include "header.h"
+        fileData = [("main.cpp", """#include "header.h"
 #include "MicroBit.h"
 
 void app_main()
@@ -832,11 +855,11 @@ void app_main()
         OPENWINDOWS.append(mw)
 
     def clearBuild(self):
-        if os.path.exists(os.path.join(buildLocation, 'source/')):
-            for i in os.listdir(os.path.join(buildLocation, 'source/')):
-                os.remove(os.path.join(buildLocation, 'source/', i))
+        if os.path.exists(os.path.join(buildLocation, "source/")):
+            for i in os.listdir(os.path.join(buildLocation, "source/")):
+                os.remove(os.path.join(buildLocation, "source/", i))
         delFolder(os.path.join(buildLocation,
-                               'build/bbc-microbit-classic-gcc/source/'))
+                               "build/bbc-microbit-classic-gcc/source/"))
 
     def startBuild(self, *args):
         global mbedUploading
@@ -858,15 +881,15 @@ void app_main()
                 fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
                 tb = f.get_child().get_buffer()
                 text = tb.get_text(*tb.get_bounds())
-                open(os.path.join(buildLocation, 'source/%s' %
+                open(os.path.join(buildLocation, "source/%s" %
                                   fn), 'w').write(text)
 
             os.chdir(buildLocation)
-            os.environ['PWD'] = buildLocation
+            os.environ["PWD"] = buildLocation
 
             if WINDOWS:
                 p = Popen(
-                    'cd %s & yotta --plain build' % buildLocation,
+                    "cd %s & yotta --plain build" % buildLocation,
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
@@ -875,7 +898,7 @@ void app_main()
                 )
             else:
                 p = Popen(
-                    ['cd %s; yotta --plain build' % buildLocation],
+                    ["cd %s; yotta --plain build" % buildLocation],
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
@@ -905,15 +928,15 @@ void app_main()
                 fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
                 tb = f.get_child().get_buffer()
                 text = tb.get_text(*tb.get_bounds())
-                open(os.path.join(buildLocation, 'source/%s' %
+                open(os.path.join(buildLocation, "source/%s" %
                                   fn), 'w').write(text)
 
             os.chdir(buildLocation)
-            os.environ['PWD'] = buildLocation
+            os.environ["PWD"] = buildLocation
 
             if WINDOWS:
                 p = Popen(
-                    'cd %s & yotta --plain build' % buildLocation,
+                    "cd %s & yotta --plain build" % buildLocation,
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
@@ -922,7 +945,7 @@ void app_main()
                 )
             else:
                 p = Popen(
-                    ['cd %s; yotta --plain build' % buildLocation],
+                    ["cd %s; yotta --plain build" % buildLocation],
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
@@ -960,7 +983,7 @@ void app_main()
         global uBitUploading
         global uBitFound
         global pipes
-        if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-combined.hex' % buildLocation):
+        if os.path.exists("%s/build/bbc-microbit-classic-gcc/source/microbit-samples-combined.hex" % buildLocation):
             if (not mbedBuilding) and (not mbedUploading):
                 uBitUploading = True
                 thread = Thread(target=upload, args=(self,))
@@ -969,10 +992,10 @@ void app_main()
 
     def closePage(self, widget, *args):
         pn = self.notebook.page_num(widget)
-        if (not widget.get_child().get_buffer().get_modified()) or self.ask("File Modified.\nDo you really want to close it?"):
+        if self.ask("Are you sure you want to delete this file?\nThis action cannot be undone!"):
             self.notebook.remove_page(pn)
             if self.notebook.get_n_pages() == 0:
-                self.addNotebookPage('main.cpp', '')
+                self.addNotebookPage("main.cpp", '')
 
     def newPage(self, *args):
         pageName = self.askQ("File Name")
@@ -1014,13 +1037,13 @@ class SerialConsole:
         thread.start()
 
         mgr = gtkSourceView.style_scheme_manager_get_default()
-        self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+        self.style_scheme = mgr.get_scheme("tango" if SETTINGS["theme"]=="light" else "oblivion")
 
         self.window = gtk.Window()
-        self.window.set_title('Serial Monitor')
-        self.window.set_icon_from_file('data/icon.png')
+        self.window.set_title("Serial Monitor")
+        self.window.set_icon_from_file("data/icon.png")
         self.window.resize(750, 400)
-        colour = gtk.gdk.color_parse('#242424')
+        colour = gtk.gdk.color_parse("#242424")
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.vbox = gtk.VBox()
@@ -1037,7 +1060,7 @@ class SerialConsole:
         txtB.place_cursor(txtB.get_start_iter())
 
         self.consoleBody = SourceView(txtB)
-        self.consoleBody.modify_font(pango.FontDescription('Monospace 10'))
+        self.consoleBody.modify_font(pango.FontDescription("Monospace 10"))
         self.consoleBody.show()
         self.consoleFrame.add(self.consoleBody)
         self.consoleBody.set_editable(False)
@@ -1063,28 +1086,28 @@ class SerialConsole:
         self.hbox = gtk.HBox()
         self.hbox.show()
         self.gtkbaudrate = gtk.combo_box_new_text()
-        self.gtkbaudrate.append_text('300')
-        self.gtkbaudrate.append_text('1200')
-        self.gtkbaudrate.append_text('2400')
-        self.gtkbaudrate.append_text('4800')
-        self.gtkbaudrate.append_text('9600')
-        self.gtkbaudrate.append_text('19200')
-        self.gtkbaudrate.append_text('38400')
-        self.gtkbaudrate.append_text('57600')
-        self.gtkbaudrate.append_text('115200')
+        self.gtkbaudrate.append_text("300")
+        self.gtkbaudrate.append_text("1200")
+        self.gtkbaudrate.append_text("2400")
+        self.gtkbaudrate.append_text("4800")
+        self.gtkbaudrate.append_text("9600")
+        self.gtkbaudrate.append_text("19200")
+        self.gtkbaudrate.append_text("38400")
+        self.gtkbaudrate.append_text("57600")
+        self.gtkbaudrate.append_text("115200")
         self.gtkbaudrate.show()
         self.gtkbaudrate.set_active(8)
-        self.gtkbaudrate.connect('changed', self.brtchange)
+        self.gtkbaudrate.connect("changed", self.brtchange)
         self.hbox.pack_start(self.gtkbaudrate, False, False)
 
         self.refreshButton = gtk.Button("Refresh")
         self.refreshButton.show()
-        self.refreshButton.connect('clicked', self.refresh)
+        self.refreshButton.connect("clicked", self.refresh)
         self.hbox.pack_start(self.refreshButton, True, False)
 
         self.clearButton = gtk.Button("Clear")
         self.clearButton.show()
-        self.clearButton.connect('clicked', self.clear)
+        self.clearButton.connect("clicked", self.clear)
         self.hbox.pack_start(self.clearButton, True, False)
 
         self.gtkserialloc = gtk.combo_box_new_text()
@@ -1092,7 +1115,7 @@ class SerialConsole:
             self.gtkserialloc.append_text(i[0])
         self.gtkserialloc.show()
         self.gtkserialloc.set_active(0)
-        self.gtkserialloc.connect('changed', self.portchange)
+        self.gtkserialloc.connect("changed", self.portchange)
         self.gtkserialloc.show()
         self.hbox.pack_end(self.gtkserialloc, False, False)
         self.vbox.pack_start(self.hbox, False, False, 0)
@@ -1177,9 +1200,9 @@ class ImageCreator():
 
     def __init__(self, *args, **kwargs):
         self.window = gtk.Window()
-        self.window.set_title('Create An Image')
-        self.window.set_icon_from_file('data/icon.png')
-        colour = gtk.gdk.color_parse('#242424')
+        self.window.set_title("Create An Image")
+        self.window.set_icon_from_file("data/icon.png")
+        colour = gtk.gdk.color_parse("#242424")
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.vvbox = gtk.VBox()
@@ -1193,21 +1216,21 @@ class ImageCreator():
             for x in range(5):
                 eb = gtk.EventBox()
                 i = gtk.Image()
-                i.set_from_file('data/selected.png')
+                i.set_from_file("data/selected.png")
                 i.show()
                 eb.add(i)
                 eb.hide()
                 eb.modify_bg(gtk.STATE_NORMAL, colour)
-                eb.connect_object('button-press-event', self.togglePart, (x, y))
+                eb.connect_object("button-press-event", self.togglePart, (x, y))
 
                 eb2 = gtk.EventBox()
                 i2 = gtk.Image()
-                i2.set_from_file('data/unselected.png')
+                i2.set_from_file("data/unselected.png")
                 i2.show()
                 eb2.add(i2)
                 eb2.show()
                 eb2.modify_bg(gtk.STATE_NORMAL, colour)
-                eb2.connect_object('button-press-event', self.togglePart, (x, y))
+                eb2.connect_object("button-press-event", self.togglePart, (x, y))
 
                 self.buttons[(x, y)] = (eb, eb2)
 
@@ -1271,7 +1294,7 @@ class FullscreenToggler(object):
         self.window = window
         self.keysym = keysym
         self.window_is_fullscreen = False
-        self.window.connect_object('window-state-event', FullscreenToggler.on_window_state_change, self)
+        self.window.connect_object("window-state-event", FullscreenToggler.on_window_state_change, self)
     def on_window_state_change(self, event):
         self.window_is_fullscreen = bool(gtk.gdk.WINDOW_STATE_FULLSCREEN & event.new_window_state)
     def toggle(self, event):
@@ -1283,23 +1306,23 @@ class FullscreenToggler(object):
 
 class SplashScreen:
     def __init__(self):
-        imageLoc = random.choice(os.listdir('data/splashScreens'))
-        imageSize = self.get_image_size(open(os.path.join('data/splashScreens', imageLoc), 'rb').read())
+        imageLoc = random.choice(os.listdir("data/splashScreens"))
+        imageSize = self.get_image_size(open(os.path.join("data/splashScreens", imageLoc), 'rb').read())
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_decorated(False)
         self.window.set_title("Micro:Pi")
-        self.window.set_icon_from_file('data/icon.png')
+        self.window.set_icon_from_file("data/icon.png")
         self.window.set_size_request(imageSize[0], -1)
         self.window.set_position(gtk.WIN_POS_CENTER)
         main_vbox = gtk.VBox(False, 1)
         self.window.add(main_vbox)
         hbox = gtk.HBox(False, 0)
         self.img = gtk.Image()
-        self.img.set_from_file(os.path.join('data/splashScreens', imageLoc))
+        self.img.set_from_file(os.path.join("data/splashScreens", imageLoc))
         main_vbox.pack_start(self.img, True, True)
         self.lbl = gtk.Label('')
-        font = pango.FontDescription('Monospace 7')
+        font = pango.FontDescription("Monospace 7")
         self.lbl.modify_font(font)
         main_vbox.pack_end(self.lbl, False, False)
         self.refresh()
@@ -1307,9 +1330,9 @@ class SplashScreen:
         self.refresh()
     def get_image_size(self, data):
         def is_png(data):
-            return (data[:8] == '\211PNG\r\n\032\n' and (data[12:16] == 'IHDR'))
+            return (data[:8] == "\211PNG\r\n\032\n" and (data[12:16] == "IHDR"))
         if is_png(data):
-            w, h = struct.unpack('>LL', data[16:24])
+            w, h = struct.unpack(">LL", data[16:24])
             width = int(w)
             height = int(h)
             return width, height
@@ -1340,7 +1363,7 @@ def main():
 
     try:
         HOMEDIR = os.path.expanduser('~')
-        MICROPIDIR = os.path.join(HOMEDIR, '.micropi')
+        MICROPIDIR = os.path.join(HOMEDIR, ".micropi")
 
         FIRSTRUN = False
 
@@ -1409,11 +1432,13 @@ fileExtention: "mpi\""""
             rstbuild()
         prevLoc = os.getcwd()
         os.chdir(buildLocation)
-        os.system('cd %s; yotta target bbc-microbit-classic-gcc' % buildLocation)
+        #os.system('cd %s; yotta target bbc-microbit-classic-gcc' % buildLocation)
         if not SETTINGS['quickstart'] or FIRSTRUN:
             _file = """#include "MicroBit.h"
 
-    void app_main()
+MicroBit uBit;
+
+    int main()
     {
     while (1)
     {

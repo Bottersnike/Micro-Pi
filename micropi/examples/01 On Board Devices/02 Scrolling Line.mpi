@@ -1,0 +1,12 @@
+(lp0
+(lp1
+S'main.cpp'
+p2
+aS'/*\n * 02 Scrolling Line.mpi\n * \n * Copyright 2016 Nathan Taylor <bottersnike237@gmail.com>\n * \n * This program is free software; you can redistribute it and/or modify\n * it under the terms of the GNU General Public License as published by\n * the Free Software Foundation; either version 2 of the License, or\n * (at your option) any later version.\n * \n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Public License for more details.\n * \n * You should have received a copy of the GNU General Public License\n * along with this program; if not, write to the Free Software\n * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,\n * MA 02110-1301, USA.\n * \n * Use the two buttons on your BBC Micro:Bit to change the speed of the line\n * as it scrolls.\n */\n#include "MicroBit.h"\n#include "images.h"\n\nint delay = 50;\n\nint _min = 15;\nint _max = 200;\nint inc = 5;\n\nint lastButton = 0;\nint button = 0;\nint i = 0;\n\nvoid app_main() {\n    while (1) {\n        uBit.display.print(image, i, 0, 1);\n        uBit.sleep(delay);\n        uBit.display.clear();\n        if (uBit.buttonB.isPressed()){\n            button = 1;\n        } else if (uBit.buttonA.isPressed()){\n            button = 2;\n        } else {\n            button = 0;\n        }\n        \n        i = i + 1;\n        if (i > 4) {\n            i = 0;\n        }\n        \n        if (button == 2 and lastButton != 2) {\n            delay = delay + inc;\n            if (delay > _max) {\n                delay = _max;\n            }\n        } else if (button == 1 and lastButton != 1) {\n            delay = delay - inc;\n            if (delay < _min) {\n                delay = _min;\n            }\n        }\n        \n        lastButton = button;\n    }\n}\n'
+p3
+aa(lp4
+S'images.h'
+p5
+aS'MicroBitImage image("1,0,0,0,0\\n\\\n                     1,0,0,0,0\\n\\\n                     1,0,0,0,0\\n\\\n                     1,0,0,0,0\\n\\\n                     1,0,0,0,0\\n");'
+p6
+aa.
