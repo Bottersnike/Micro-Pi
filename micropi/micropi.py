@@ -716,7 +716,7 @@ void app_main()
 
     def openFile(self, *args):
         if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-            fn = gtk.FileChooserDialog(title=None,
+            fn = gtk.FileChooserDialog(title="Save File",
                                        action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                        buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
             _filter = gtk.FileFilter()
@@ -767,7 +767,7 @@ void app_main()
             self.saveAs()
 
     def saveAs(self, *args):
-        fn = gtk.FileChooserDialog(title=None,
+        fn = gtk.FileChooserDialog(title="Save File As",
                                    action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                    buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
@@ -970,7 +970,7 @@ void app_main()
             pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
     def importFile(self, *args):
-        fn = gtk.FileChooserDialog(title=None,
+        fn = gtk.FileChooserDialog(title="Import File",
                                    action=gtk.FILE_CHOOSER_ACTION_OPEN,
                                    buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
