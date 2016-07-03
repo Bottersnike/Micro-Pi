@@ -18,20 +18,13 @@ little features to speed up your day. And, oh! Did I
 mention that it's open source?
 
 ##Instalation
-On a raspberry pi (the intended platform) it's
-simple. Open up a terminal and type the following:
-    sudo apt-get install srecord cmake ninja-build
-    sudo pip install micropi
-Then to start it simple type `sudo micro-pi`
-into a terminal window.
-On other platforms, you may need
-to download and install cmake, ninja-build and
-srecord manually, but Micro:Pi can still be installed
-with pip. On Windows (also posiably mac) you need to
-run `python -m micropi` to start it. If pip is
-unavaliable, you can download the .zip file from
-the [PyPi Warehouse](http://warehouse.python.org/project/MicroPi), extract
-it, then run `python setup.py install`
+To install Micro:Pi there is a new script bundled. Open a terminal
+in the root folder of Micro:Pi then type `./install.sh`. It has to
+be run as root so `sudo sh install.sh` is recommended. Uninstalling
+in done by the `uninstall.sh` script and in run in the same way.
+If you want to install Micro:Pi without having to download it, type
+`git clone https://github.com/Bottersnike/Micro-Pi.git
+sudo sh install.sh` and it should install.
 
 ##Features
 - In the top left corner are 4 triangles that indicate the statud of you
