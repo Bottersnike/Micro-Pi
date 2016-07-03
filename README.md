@@ -23,8 +23,10 @@ in the root folder of Micro:Pi then type `./install.sh`. It has to
 be run as root so `sudo sh install.sh` is recommended. Uninstalling
 in done by the `uninstall.sh` script and in run in the same way.
 If you want to install Micro:Pi without having to download it, type
-```git clone https://github.com/Bottersnike/Micro-Pi.git
-sudo sh install.sh```
+```
+git clone https://github.com/Bottersnike/Micro-Pi.git
+sudo sh install.sh
+```
 and it should install.
 
 ##Features
