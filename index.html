@@ -1,188 +1,105 @@
-<!DOCTYPE HTML>
+<!doctype html>
 <html>
-    <head>
-        <title>Micro:Pi</title>
-        <link href="sheet.css" rel="stylesheet">
-		<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,800italic,800,700,300italic,300,600italic,700italic,400italic' rel='stylesheet' type='text/css'>
-    </head>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Micro-pi by Bottersnike</title>
 
-    <body>
-        <script type="text/javascript">
-            function toggle_visibility(id) {
-                var e = document.getElementById(id);
-                if(e.style.display == 'inline') {
-                    e.style.display = 'none';
-                } else {
-                    e.style.display = 'inline';
-                }
-            }
-        </script>
-        <div id="top"></div>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Micro-pi</h1>
+        <p>A Pure Python IDE For The BBC Micro:Bit</p>
 
-        <center>
-            <div class="header">
-                <h1><b>Micro:Pi</b></h1>
-                <h2>A Pure Python IDE For The BBC Micro:Bit</h2>
-                <div>
-                    <a href="http://github.com/Bottersnike/Micro-Pi"><div class="button">View On Github</div></a>
-                    <a href="http://warehouse.python.org/project/MicroPi"><div class="button">View On PyPi Warehouse</div></a>
-                    <a href="https://pypi.python.org/pypi/MicroPi/"><div class="button">View On PyPi</div></a>
-                </div>
-                <br>
-            </div>
-            <div style="visibility:hidden">
-                <b><h1>Micro:Pi</h1></b>
-                <h2>A Pure Python IDE For The BBC Micro:Bit</h2>
-                <div>
-                    <div class="button">View On Github</div>
-                    <div class="button">View On PyPi Warehouse</div>
-                    <div class="button">View On PyPi</div>
-                </div>
-                <br>
-            </div>
-        </center>
-
-        <a href="##" onclick="toggle_visibility('fadeScreen');toggle_visibility('popup');">
-            <div id="fadeScreen" style="display:none"></div>
-            <center>
-                <div id="popup" style="display:none">
-                    <img style="height:70%" src="images/screenshot.png">
-                </div>
-            </center>
-        </a>
+        <p class="view"><a href="https://github.com/Bottersnike/Micro-Pi">View the Project on GitHub <small>Bottersnike/Micro-Pi</small></a></p>
 
 
-        <div class="content">
-            <div class="contents">
-                <h3>Contents:</h3>
-                <p><a href="#whatisit">Summary</a></p>
-                <p><a href="#whyuseit">Why use Micro:Pi over alternatives?</a></p>
-                <p><a href="#install">Instalation</a></p>
-                <p><a href="#features">Features</a></p>
-                <p><a href="#contribute">Contribute</a></p>
-                <p><a href="#thanks">Thanks To</a></p>
-            </div>
-            <h2 id="whatisit">Summary</h2>
-            <p>Micro:Pi is a pure python IDE (Intergrated
-            Development Enviroment) designed to run on any system
-            with python. It has a simple interface and features
-            including built in examples, file inporting, and even
-            different themes to suit how you are feeling.</p>
-            <h2 id="whyuseit">Why use Micro:Pi over alternatives?</h2>
-            <p>For starters, once you have donloaded the yotta
-            build setup (included with the pip package) it's
-            entirely offline and doens't require any internet
-            connection at all. Seccondly, it is an IDE for C++. C++
-            if the langauge that all of the other editors are build
-            arround, but none of them atchually allow you to
-            program in it. All except for Micro:Pi! Other than that
-            it is self contained, simple to use, contains lots of
-            little features to speed up your day. And, oh! Did I
-            mention that it's open source?</p>
-            <h2 id="install">Instalation</h2>
-            <p>On a raspberry pi (the intended platform) it's
-            simple. Open up a terminal and type the following:</p>
-            <pre>sudo apt-get install srecord cmake ninja-build
-sudo pip install micropi</pre>
-            <p>Then to start it simple type <code>sudo micro-pi</code>
-            into a terminal window.<br>On other platforms, you may need
-            to download and install cmake, ninja-build and
-            srecord manually, but Micro:Pi can still be installed
-            with pip. On Windows (also posiably mac) you need to
-            run <code>python -m micropi</code> to start it. If pip is
-            unavaliable, you can download the .zip file from
-            the <a href="http://warehouse.python.org/project/MicroPi">PyPi Warehouse</a>, extract
-            it, then run <code>python setup.py install</code></p>
-            <h2 id="features">Features</h2>
-            <a href="##" onclick="toggle_visibility('fadeScreen');toggle_visibility('popup');"><img style="float:left;width:25%;" src="images/screenshot.png"></a>
-            <list>
-                <li>In the top left corner are 4 triangles that
-                indicate the statud of you Micro:Bit. You highligh
-                colour to say it's plugged in. Orange if it's uploading,
-                and red is if Micro:Pi can't find you Micro:Bit.</li>
-                <li>Just underneath the 4 triangles, is your tab view.
-                This allows you to create multiple files in your
-                project.</li>
-                <li>On the far right are 4 icons. From left to right
-                they are, build, build and upload, toggle console and
-                menu.</li>
-                <li>The menu can be shown by clicking the menu icon and
-                in it you have the option to do things like save, load
-                and quit, but there are also some things like "import
-                file" which allows you to add a file to your workspace
-                and "reset build" which resets the enviroment in which
-                Micro:Pi creates your finished code.</li>
-                <li>If you hover over "Examples" a submenu appears from
-                which you can chose pre-made examples to help you get
-                started.</li>
-                <li>If you click on settings from the menu, you will
-                be greeted with the screen show in the screen shot and
-                the options are as follows:
-                <table>
-                    <tr>
-                        <td>Quick Start</td>
-                        <td>This toggles whether to reset the build
-                        enviroment every time you start Micro:Pi. It
-                        is reccomended to put this on and just use
-                        "Rest Build" from the menu if you need to</td>
-                    </tr>
-                    <tr>
-                        <td>Micro:Bit Location</td>
-                        <td>This is where Micro:Pi tries to fond your
-                        Micro:Bit. On windows change it to something
-                        like "E:\" or whatevery your Micro:Bit's drive
-                        letter is. (Use the arrow keys to move the
-                        cursor)</td>
-                    </tr>
-                    <tr>
-                        <td>Theme</td>
-                        <td>Use the round buttons to select your chosen
-                        theme.</td>
-                    </tr>
-                </table>
-                </li>
-                <li>The large white box in the top half of the screne
-                is your text editor. This is where you write your code
-                to put on your Micro:Bit</li>
-                <li>Just under that, if you have the console toggled on,
-                is the console. Here you will see status on how build is
-                doing and any errors in your code.</li>
-            </list>
-            <h2 id="contribute">Contribute</h2>
-            <p>If you want to contribute, then at the moment there isn't
-            a paypal button or anything like that, but if you are any
-            good at art then you could contribute by creating some new
-            buttons for the top right. At the moment, they are a bit
-            rubish and are only really placeholders. Also you could
-            create some more splash screens as veriety is cool. This
-            website could also do with some work if someone is willing
-            to put in the time. In fact, if you really wanted you could
-            help with the code because things like dragging to select
-            text, copy/paste, Xscroll aren't yet implemented. You can
-            find the source code either at <a href="http://github.com/Bottersnike/Micro-Pi">http://github.com/Bottersnike/MicroPi</a>
-            or by downloading the zip from <a href="http://warehouse.python.org/project/MicroPi">http://warehouse.python.org/project/MicroPi</a>. If you
-            have created something, you can email it to me at
-            <a href="mailto:bottersnike237@gmail.com">bottersnike237@gmail.com</a>.</p>
-            <h2 id="thanks">Thanks To:</h2>
-            <p>
-                <list>
-                    <li>The MBED team for developing yotta and alot of
-                    the build process</li>
-                    <li>Lancaster University for the microbit-dal
-                    runtime that this entire project is built upon</li>
-                    <li>Joe Finney from Lancaster Uni. for helping me
-                    when I was facing problems settings up yotta on my
-                    pi</li>
-                    <li>The entire Raspberry Pi Forums community for
-                    answering all my questions</li>
-                </list>
-            </p>
-        </div>
+        <ul>
+          <li><a href="https://github.com/Bottersnike/Micro-Pi/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/Bottersnike/Micro-Pi/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/Bottersnike/Micro-Pi">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h2>
+<a id="summary" class="anchor" href="#summary" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Summary</h2>
 
-        <div class="class">
-            <p style="font-size:75%;display:inline;float:left;">Micro:Pi is not affiliated with the BBC in any way.</p>
-            <p style="font-size:75%;display:inline;float:right;"><a style="color:#ffffff" href="#top">Return To Top</a></p>
-        </div>
+<p>Micro:Pi is a pure python IDE (Intergrated
+Development Enviroment) designed to run on any system
+with python. It has a simple interface and contains a whole
+box of tricks such as the serial monitor and image sender/reciver.</p>
 
-    </body>
+<h2>
+<a id="why-use-micropi-over-alternatives" class="anchor" href="#why-use-micropi-over-alternatives" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why use Micro:Pi over alternatives?</h2>
+
+<p>Micro:Pi can run entirely offline if you want to. It downloads all
+of its dependancys at install time and from that point on no
+internet connection is required. Micro:Pi also allows you to program
+your BBC Micro:Bit in C++ which is usually only avaliable through
+command line interfaces (which Micro:Pi does for you). It also comes
+with a built in serial monitor and it's entierly open source.</p>
+
+<h2>
+<a id="instalation" class="anchor" href="#instalation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Instalation</h2>
+
+<p>To install Micro:Pi there is a new script bundled. Open a terminal
+in the root folder of Micro:Pi then type <code>./install.sh</code>. It has to
+be run as root so <code>sudo sh install.sh</code> is recommended. Uninstalling
+in done by the <code>uninstall.sh</code> script and in run in the same way.
+If you want to install Micro:Pi without having to download it, type</p>
+
+<pre><code>git clone https://github.com/Bottersnike/Micro-Pi.git
+sudo sh install.sh
+</code></pre>
+
+<p>and it should install.</p>
+
+<h2>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features</h2>
+
+<ul>
+<li>In the top left corner are 4 triangles that indicate the statud of you
+Micro:Bit. It goes green if your Micro:Bit is found, orange if
+it's uploading, and red is if Micro:Pi can't find you Micro:Bit.</li>
+<li>Just underneath the 4 triangles, is your tab view. This allows you to
+create multiple files in your project.</li>
+<li>The large white box in the top half of the screen is your text editor.
+This is where you write your code to put on your Micro:Bit</li>
+<li>Just under that, is where you can find your console. This shows the output
+of the build and upload process. Errors will appear here.</li>
+<li>In the deploy menu, you can find the serial monitor. From here you can
+send and recieve text from your BBC Micro:Bit.</li>
+</ul>
+
+<h2>
+<a id="contribute" class="anchor" href="#contribute" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contribute</h2>
+
+<p>I don't have a PayPal or anything similar but the best way you can contribute
+is by just letting people know about Micro:Pi and getting it out.</p>
+
+<h2>
+<a id="thanks-to" class="anchor" href="#thanks-to" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Thanks To:</h2>
+
+<ul>
+<li>The MBED team for developing yotta and alot of the build process</li>
+<li>Lancaster University for the microbit-dal runtime that this entire project is built upon</li>
+<li>Joe Finney from Lancaster Uni. for helping me when I was facing problems settings up yotta on my pi</li>
+<li>The entire Raspberry Pi Forums community for answering all my questions</li>
+</ul>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/Bottersnike">Bottersnike</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
 </html>
