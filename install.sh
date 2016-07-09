@@ -5,7 +5,7 @@ if [ "$(id -u)" != "0" ]; then
     echo -e "=  This script must be run as root. ="
     echo -e "=  Please run this script again on  ="
     echo -e "=     an account with significant   ="
-    echo -e "= privilages (sudo bash install.sh) ="
+    echo -e "= privilages (sudo sh install.sh) ="
     echo -e "=====================================\033[37m"
     exit 1
 fi
