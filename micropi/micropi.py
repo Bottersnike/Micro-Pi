@@ -582,6 +582,9 @@ void app_main()
 
         self.window.show()
 
+        if len(sys.argv) > 1:
+            self.forceOpenFileByFN(sys.argv[1])
+
     def website(self, *args):
         webbrowser.open("http://bottersnike.github.io/Micro-Pi")
 
@@ -736,7 +739,6 @@ void app_main()
                     try:
                         d = text.replace("\n", "")
                         d = base64.b64decode(d)
-                        print d
                         data = pickle.loads(d)
                     except:
                         data = pickle.loads(text)
@@ -750,6 +752,33 @@ void app_main()
             fn.destroy()
             if resp == gtk.RESPONSE_OK and not yes:
                 self.message("File is not a Micro:Pi File")
+
+    def forceOpenFileByFN(self, fn, *args):
+        yes = True
+        try:
+            try:
+                text = open(fn).read()
+            except:
+                fn = os.path.join(WORKINGDIR, fn)
+                text = open(fn).read()
+            try:
+                d = text.replace("\n", "")
+                d = base64.b64decode(d)
+                data = pickle.loads(d)
+            except:
+                data = pickle.loads(text)
+            sys.argv = [sys.argv[0]]
+            mw = MainWin(data)
+            mw.saveLocation = fn
+            mw.setSaved()
+            OPENWINDOWS.append(mw)
+            self.destroy()
+            yes = True
+        except:
+            yes = False
+        if not yes:
+            self.message("File is not a Micro:Pi File")
+
 
     def save(self, *args):
         files = {}
