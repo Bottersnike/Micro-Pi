@@ -17,12 +17,31 @@ To install Micro:Pi there is a new script bundled. Open a terminal
 in the root folder of Micro:Pi then type `./install.sh`. It has to
 be run as root so `sudo sh install.sh` is recommended. Uninstalling
 in done by the `uninstall.sh` script and in run in the same way.
-If you want to install Micro:Pi without having to download it, type
+If you want to install Micro:Pi without having to download it all first,
+download the install.sh file then run
 ```
-git clone https://github.com/Bottersnike/Micro-Pi.git
-sudo sh install.sh
+sudo sh install.sh --online
 ```
-and it should install.
+and it should download and install.
+
+If you are on a non linux system, download this repository from github
+then download and install the following:
+- srecord
+- cmake
+- gcc-arm-none-eabi
+- ninja-build
+- lib-ffi
+- python 2.7
+- pyGTK2.0 for python 2.7
+- pyGTK2.0 GTKSourceView
+You can then start micropi using
+
+```
+cd micropi
+python micropi.py
+```
+An install script for windows is planned by is made hard because windows
+doesn't have a package manager.
 
 ##Features
 - In the top left corner are 4 triangles that indicate the statud of you
