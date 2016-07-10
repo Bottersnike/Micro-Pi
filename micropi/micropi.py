@@ -779,7 +779,6 @@ void app_main()
         if not yes:
             self.message("File is not a Micro:Pi File")
 
-
     def save(self, *args):
         files = {}
         for f in self.notebook:
