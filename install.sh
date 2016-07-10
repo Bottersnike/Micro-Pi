@@ -31,20 +31,21 @@ if [ "$1" != 'nodeps' ]; then
         echo "===================================\033[37m"
         exit 1
     fi
+
+    echo "Installing Yotta:"
+    if pip install yotta; then
+        echo "Dependencies Fetched"
+    else
+        echo "\033[31m==================================="
+        echo "=  There was an error installing  ="
+        echo "=              yotta              ="
+        echo "===================================\033[37m"
+        exit 1
+    fi
 else
 	echo "Skipping Dependancys"
 fi
 
-echo "Installing Yotta:"
-if pip install yotta; then
-    echo "Dependencies Fetched"
-else
-    echo "\033[31m==================================="
-    echo "=  There was an error installing  ="
-    echo "=              yotta              ="
-    echo "===================================\033[37m"
-    exit 1
-fi
 echo "Fetching Micro:Pi"
 
 cp -vr micropi/ /usr/local/lib/python2.7/dist-packages/micropi/
