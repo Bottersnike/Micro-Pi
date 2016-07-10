@@ -19,15 +19,15 @@ echo "=               install              ="
 echo -e "======================================\033[37m"
 
 echo "Installing Required Porgrams:"
-if apt-get update && sudo apt-get install srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev; then
-    echo "Dependancys Fetched"
-else
-    echo -e "\033[31m==================================="
-    echo "=  There was an error installing  ="
-    echo "=          dependencies           ="
-    echo -e "===================================\033[37m"
-    exit 1
-fi
+#if apt-get update && sudo apt-get install srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev; then
+    #echo "Dependancys Fetched"
+#else
+    #echo -e "\033[31m==================================="
+    #echo "=  There was an error installing  ="
+    #echo "=          dependencies           ="
+    #echo -e "===================================\033[37m"
+    #exit 1
+#fi
 echo "Installing Yotta:"
 if pip install yotta; then
     echo "Dependencies Fetched"
