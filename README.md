@@ -26,13 +26,18 @@ and it should download and install.
 
 If you are on a non linux system, download this repository from github
 then download and install the following:
-- python 2.7 [https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi](https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi)
-- pyGTK2.0 All In One[http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/pygtk-all-in-one-2.24.2.win32-py2.7.msi](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/pygtk-all-in-one-2.24.2.win32-py2.7.msi)
+- python 2.7 [https://www.python.org/.../python-2.7.12.msi](https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi)
+- pyGTK2.0 All In One[http://ftp.gnome.org/.../pygtk-all-in-one-2.24.2.win32-py2.7.msi](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/pygtk-all-in-one-2.24.2.win32-py2.7.msi)
     (Be sure to check PyGtkSourceView2 2.10.1 in the installation window)
-- yotta [http://yottadocs.mbed.com/](http://yottadocs.mbed.com/)(Make
-    sure you do the manual installation. To test yotta, open a terminal and
-    type `yotta --version`. If you OS can't fint the `yotta` command check
-    your install as the command is required for Micro:Pi)
+- yotta [https://mbed-media.mbed.com/.../yotta_install_v023.exe](https://mbed-media.mbed.com/filer_public/2f/0b/2f0b924c-1fac-4907-989b-f2afe3f5785e/yotta_install_v023.exe)
+- gcc-arm-none-eabi [https://launchpad.net/.../gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe](https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q2-update/+download/gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe)
+Now you need to add the location where you installed yotta (C:\yotta by
+default) and the \bin directory of you gcc-arm-none-eabi installation to
+your global path. Instructions for adding to you path can be found at
+[http://yottadocs.mbed.com/#windows-path](http://yottadocs.mbed.com/#windows-path).
+If you want you can also remove the "Run Yotta" shortcut from your
+desktop as you don't need it.
+
 You can then start micropi using
 ```
 cd micropi
