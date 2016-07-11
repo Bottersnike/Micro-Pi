@@ -1065,7 +1065,9 @@ void app_main()
         gtk.main()
 
 class SerialConsole:
-    def __init__(self):
+    def __init__(self, indep=False):
+        self.indep = indep
+
         self.imageCreator = ImageCreator()
 
         self.baudrate = 115200
@@ -1214,9 +1216,13 @@ class SerialConsole:
             self.serialConnection.baudrate = self.baudrate
 
     def destroy(self, *args):
-        self.window.hide()
-        self.shown = False
-        return True
+        if not self.indep:
+            self.window.hide()
+            self.shown = False
+            return True
+        else:
+            self.window.destroy()
+            gtk.main_quit()
 
     def toggleVis(self, *args):
         if self.shown:
@@ -1387,7 +1393,7 @@ class SplashScreen:
         while gtk.events_pending():
             gtk.main_iteration()
 
-def main():
+def main(start="mainwin"):
     global SETTINGS
     global configLocation
     global buildLocation
@@ -1534,10 +1540,16 @@ MicroBit uBit;
         import traceback
         print traceback.print_exc()
         sys.exit(1)
-    main = MainWin()
-    OPENWINDOWS.append(main)
-    ss.window.destroy()
-    main.main()
+    if start == "mainwin":
+        main = MainWin()
+        OPENWINDOWS.append(main)
+        ss.window.destroy()
+        main.main()
+    elif start == "serialc":
+        main = SerialConsole(True)
+        ss.window.destroy()
+        main.window.show()
+        gtk.main()
 
 if __name__ == "__main__":
     main()

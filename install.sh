@@ -1,4 +1,24 @@
-#!/bin/bash
+#!/bin/sh
+#  install.sh
+#
+#  Copyright 2016 Nathan Taylor
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
 
 installdeps=1
 online=0
@@ -15,10 +35,10 @@ done
 
 if [ "$(id -u)" != "0" ]; then
     echo "\033[31m====================================="
-    echo "=   This script must be run as root.  ="
-    echo "=   Please run this script again on   ="
-    echo "=      an account with significant    ="
-    echo "=  privilages (sudo bash install.sh)  ="
+    echo "=  This script must be run as root. ="
+    echo "=  Please run this script again on  ="
+    echo "=     an account with significant   ="
+    echo "=  privilages (sudo sh install.sh)  ="
     echo "=====================================\033[37m"
     exit 1
 fi
@@ -33,7 +53,7 @@ echo "======================================\033[37m"
 
 if [ $installdeps -eq 1 ]; then
     echo "Installing Required Porgrams:"
-    if apt-get update && sudo apt-get install srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev; then
+    if apt-get update && sudo apt-get install srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev libssl-dev; then
         echo "Dependancys Fetched"
     else
         echo "\033[31m==================================="
@@ -78,5 +98,6 @@ else
     cd scripts
     chmod +x *
     cp -v micropi /usr/bin/
+    cp -v micropi-serial /usr/bin/
     chmod +x /usr/bin/micropi
 fi

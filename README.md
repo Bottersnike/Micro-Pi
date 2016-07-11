@@ -26,16 +26,14 @@ and it should download and install.
 
 If you are on a non linux system, download this repository from github
 then download and install the following:
-- srecord
-- cmake
-- gcc-arm-none-eabi
-- ninja-build
-- lib-ffi
-- python 2.7
-- pyGTK2.0 for python 2.7
-- pyGTK2.0 GTKSourceView
+- python 2.7 [https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi](https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi)
+- pyGTK2.0 All In One[http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/pygtk-all-in-one-2.24.2.win32-py2.7.msi](http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/pygtk-all-in-one-2.24.2.win32-py2.7.msi)
+    (Be sure to check PyGtkSourceView2 2.10.1 in the installation window)
+- yotta [http://yottadocs.mbed.com/](http://yottadocs.mbed.com/)(Make
+    sure you do the manual installation. To test yotta, open a terminal and
+    type `yotta --version`. If you OS can't fint the `yotta` command check
+    your install as the command is required for Micro:Pi)
 You can then start micropi using
-
 ```
 cd micropi
 python micropi.py
