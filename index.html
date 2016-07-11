@@ -53,13 +53,43 @@ with a built in serial monitor and it's entierly open source.</p>
 in the root folder of Micro:Pi then type <code>./install.sh</code>. It has to
 be run as root so <code>sudo sh install.sh</code> is recommended. Uninstalling
 in done by the <code>uninstall.sh</code> script and in run in the same way.
-If you want to install Micro:Pi without having to download it, type</p>
+If you want to install Micro:Pi without having to download it all first,
+download the install.sh file then run</p>
 
-<pre><code>git clone https://github.com/Bottersnike/Micro-Pi.git
-sudo sh install.sh
+<pre><code>sudo sh install.sh --online
 </code></pre>
 
-<p>and it should install.</p>
+<p>and it should download and install.</p>
+
+<p>If you are on a non linux system, download this repository from github
+then download and install the following:</p>
+
+<ul>
+<li>python 2.7 <a href="https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi">https://www.python.org/.../python-2.7.12.msi</a>
+</li>
+<li>pyGTK2.0 All In One<a href="http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/pygtk-all-in-one-2.24.2.win32-py2.7.msi">http://ftp.gnome.org/.../pygtk-all-in-one-2.24.2.win32-py2.7.msi</a>
+(Be sure to check PyGtkSourceView2 2.10.1 in the installation window)</li>
+<li>yotta <a href="https://mbed-media.mbed.com/filer_public/2f/0b/2f0b924c-1fac-4907-989b-f2afe3f5785e/yotta_install_v023.exe">https://mbed-media.mbed.com/.../yotta_install_v023.exe</a>
+</li>
+<li>gcc-arm-none-eabi <a href="https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q2-update/+download/gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe">https://launchpad.net/.../gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe</a>
+</li>
+</ul>
+
+<p>Now you need to add the location where you installed yotta (C:\yotta by
+default) and the \bin directory of you gcc-arm-none-eabi installation to
+your global path. Instructions for adding to you path can be found at
+<a href="http://yottadocs.mbed.com/#windows-path">http://yottadocs.mbed.com/#windows-path</a>.
+If you want you can also remove the "Run Yotta" shortcut from your
+desktop as you don't need it.</p>
+
+<p>You can then start micropi using</p>
+
+<pre><code>cd micropi
+python micropi.py
+</code></pre>
+
+<p>An install script for windows is planned by is made hard because windows
+doesn't have a package manager.</p>
 
 <h2>
 <a id="features" class="anchor" href="#features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features</h2>
