@@ -45,6 +45,10 @@ import struct
 import errorParser
 import json
 import sys
+import shutil
+
+SENDIMAGE = False
+
 
 OPENWINDOWS = []
 uBitUploading = False
@@ -128,9 +132,9 @@ def ask(query, parent=None):
 
 def askQ(query, prompt=None, parent=None):
     if prompt:
-        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query, default_value=prompt)
+        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query, default_value=prompt)
     else:
-        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query)
+        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
     dia.show()
     rtn=dia.run()
     dia.destroy()
@@ -203,6 +207,7 @@ At line %d, index %d:
                 if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation):
                     gobject.idle_add(addText, self, "Done!\n")
                     if mbedUploading and uBitFound:
+                        uBitUploading = True
                         gobject.idle_add(addText, self, "Uploading!\n")
                         thread = Thread(target=upload, args=(self,))
                         thread.daemon = True
@@ -294,9 +299,21 @@ def delFolder(path):
                 os.remove(os.path.join(path, i))
 
 def setupBEnv():
-    tf = tarfile.open("buildenv.tar.gz", 'r:gz')
-    tf.extractall(MICROPIDIR)
-
+    #tf = tarfile.open("buildenv.tar.gz", 'r:gz')
+    #tf.extractall(MICROPIDIR)
+    _dir = os.getcwd()
+    os.chdir(MICROPIDIR)
+    os.mkdir("microbit-build")
+    os.chdir("microbit-build")
+    os.system("yotta -n init")
+    os.system("yotta target bbc-microbit-classic-gcc")
+    os.system("yotta install lancaster-university/microbit")
+    d = json.load(open("module.json"))
+    d["bin"] = "./source"
+    json.dump(d, open("module.json", "w"), sort_keys=True, indent=4, separators=(',', ': '))
+    os.chdir("..")
+    shutil.move("microbit-build", "buildEnv")
+    os.chdir(_dir)
 
 class NBSR:
     """
@@ -556,6 +573,11 @@ void app_main()
 
 }
 """), ('header.h', '')]
+        elif type(fileData) == dict:
+            fd = []
+            for i in fileData:
+                fd.append((i, fileData[i]))
+            fileData = fd
         for i in fileData:
             self.addNotebookPage(*i)
 
@@ -672,7 +694,7 @@ void app_main()
             for f in self.notebook:
                 f.get_child().props.buffer.set_style_scheme(self.style_scheme)
             self.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
-            self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
+            if SENDIMAGE: self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
             self.serialConsole.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
             self.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
 
@@ -789,6 +811,8 @@ void app_main()
         data = base64.b64encode(pickle.dumps(files))
         data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
         if self.saveLocation:
+            if self.saveLocation[-len(SETTINGS["fileExtention"]):] != SETTINGS["fileExtention"]:
+                self.saveLocation += SETTINGS["fileExtention"]
             open(self.saveLocation, 'w').write(data)
             self.setSaved()
         else:
@@ -821,11 +845,11 @@ void app_main()
 
         if resp == gtk.RESPONSE_OK:
             fp = fn.get_filename()
-            if fp[-4:] != ".mpi":
-                fp = fp + ".mpi"
+            if fp[-len(SETTINGS["fileExtention"]):] != SETTINGS["fileExtention"]:
+                fp += SETTINGS["fileExtention"]
             open(fp, 'w').write(data)
             self.setSaved()
-            self.saveLocation = fn.get_filename()
+            self.saveLocation = fp
         fn.destroy()
 
     def destroy(self, *args):
@@ -857,9 +881,9 @@ void app_main()
 
     def askQ(self, query, prompt=None):
         if prompt:
-            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query, default_value=prompt)
+            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query, default_value=prompt)
         else:
-            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query)
+            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
         dia.show()
         rtn=dia.run()
         dia.destroy()
@@ -871,9 +895,10 @@ void app_main()
             text = open(example).read()
             try:
                 try:
-                    data = pickle.loads(base64.b64decode(text).replace("\n", ""))
-                except:
+                    data = pickle.loads(base64.b64decode(text.replace("\n", "")))
+                except Exception as e:
                     data = pickle.loads(text)
+
                 mw = MainWin(data)
                 yes = True
                 mw.saveLocation = ''
@@ -1068,7 +1093,8 @@ class SerialConsole:
     def __init__(self, indep=False):
         self.indep = indep
 
-        self.imageCreator = ImageCreator()
+        if SENDIMAGE:
+            self.imageCreator = ImageCreator()
 
         self.baudrate = 115200
         self.ports = list(list_ports.grep(''))
@@ -1120,10 +1146,11 @@ class SerialConsole:
         self.entryHBox.pack_start(self.sendButton, False, False, 2)
         self.sendButton.show()
         self.sendButton.connect("clicked", self.send)
-        self.sendImageButton = gtk.Button("Send Image")
-        self.entryHBox.pack_start(self.sendImageButton, False, False, 2)
-        self.sendImageButton.show()
-        self.sendImageButton.connect("clicked", self.showImageCreator)
+        if SENDIMAGE:
+            self.sendImageButton = gtk.Button("Send Image")
+            self.entryHBox.pack_start(self.sendImageButton, False, False, 2)
+            self.sendImageButton.show()
+            self.sendImageButton.connect("clicked", self.showImageCreator)
 
         self.entryHBox.show()
         self.vbox.pack_start(self.entryHBox, False, False, 2)
@@ -1317,6 +1344,8 @@ class ImageCreator():
             for x in range(5):
                 line.append(str(int(self.buttons[(x, y)][0].props.visible)))
             data += ','.join(line) + '\n'
+        data += ";"
+
         if self.onOkay:
             self.onOkay(data)
 

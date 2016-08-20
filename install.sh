@@ -22,16 +22,28 @@
 
 installdeps=1
 online=0
+help=0
 
 while [ "$1" != "" ]; do
     case $1 in
-        -o | --online )           online=1
+        -o | --online    )        online=1
                                   ;;
-        -n | --nodeps )           installdeps=0
+        -n | --nodeps    )        installdeps=0
+                                  ;;
+        -h | --help )        help=1
                                   ;;
     esac
     shift
 done
+
+if [ $help -eq 1 ]; then
+    echo "Help:"
+    echo ""
+    echo "-o --online         Online install"
+    echo "-n --nodeps         Install without collecting dependancys"
+    echo "-h --help        Show this help message"
+    exit 0
+fi
 
 if [ "$(id -u)" != "0" ]; then
     echo "\033[31m====================================="
