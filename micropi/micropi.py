@@ -955,13 +955,14 @@ void app_main()
         global uBitFound
         global pipes
         if not (mbedUploading or mbedBuilding):
-            txtB = gtkSourceView.Buffer()
-            txtB.set_style_scheme(self.style_scheme)
-            txtB.set_highlight_matching_brackets(False)
-            txtB.set_highlight_syntax(False)
-            txtB.place_cursor(txtB.get_start_iter())
+            for w in OPENWINDOWS:
+                txtB = gtkSourceView.Buffer()
+                txtB.set_style_scheme(self.style_scheme)
+                txtB.set_highlight_matching_brackets(False)
+                txtB.set_highlight_syntax(False)
+                txtB.place_cursor(txtB.get_start_iter())
 
-            self.consoleBody.props.buffer = txtB
+                w.consoleBody.props.buffer = txtB
             mbedBuilding = True
             self.clearBuild()
             for f in self.notebook:
