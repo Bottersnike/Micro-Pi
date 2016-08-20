@@ -556,13 +556,14 @@ class MainWin:
         self.indicator.show()
         self.toolbar.pack_start(self.indicator, False)
 
+
         self.toolbar.show()
         tbW.pack_start(self.toolbar, True, True, 0)
         tbW.show()
         self.table.attach(tbW, 0, 5, 1, 2, gtk.FILL, gtk.FILL)
 
         self.notebook = gtk.Notebook()
-        self.table.attach(self.notebook, 0, 1, 2, 4)
+        #self.table.attach(self.notebook, 0, 1, 2, 4)
         self.notebook.show()
         if not fileData:
             fileData = [('main.cpp', """#include "MicroBit.h"
@@ -602,7 +603,13 @@ int main()
         self.consoleBody.show()
         self.consoleFrame.add(self.consoleBody)
         self.consoleBody.set_editable(False)
-        self.table.attach(self.consoleFrame, 0, 1, 4, 5)
+        #self.table.attach(self.consoleFrame, 0, 1, 4, 5)
+
+        self.bodyPaned = gtk.VPaned()
+        self.bodyPaned.pack1(self.notebook, True, True)
+        self.bodyPaned.pack2(self.consoleFrame, False, True)
+        self.table.attach(self.bodyPaned, 0, 1, 2, 5)
+        self.bodyPaned.show()
 
         self.setSaved()
 
