@@ -830,8 +830,6 @@ int main()
         data = base64.b64encode(pickle.dumps(files))
         data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
         if self.saveLocation:
-            if self.saveLocation[-len(SETTINGS["fileExtention"]):] != SETTINGS["fileExtention"]:
-                self.saveLocation += SETTINGS["fileExtention"]
             open(self.saveLocation, 'w').write(data)
             self.setSaved()
         else:
@@ -864,8 +862,8 @@ int main()
 
         if resp == gtk.RESPONSE_OK:
             fp = fn.get_filename()
-            if fp[-len(SETTINGS["fileExtention"]):] != SETTINGS["fileExtention"]:
-                fp += SETTINGS["fileExtention"]
+            if fp[-(len(SETTINGS["fileExtention"])+1):] != "." + SETTINGS["fileExtention"]:
+                fp += "." + SETTINGS["fileExtention"]
             open(fp, 'w').write(data)
             self.setSaved()
             self.saveLocation = fp
