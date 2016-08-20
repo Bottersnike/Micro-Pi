@@ -565,14 +565,20 @@ class MainWin:
         self.table.attach(self.notebook, 0, 1, 2, 4)
         self.notebook.show()
         if not fileData:
-            fileData = [('main.cpp', """#include "header.h"
-#include "MicroBit.h"
+            fileData = [('main.cpp', """#include "MicroBit.h"
 
-void app_main()
+MicroBit uBit;
+
+int main()
 {
+    uBit.init();
 
+    while (1)
+    {
+
+    }
 }
-"""), ('header.h', '')]
+""")]
         elif type(fileData) == dict:
             fd = []
             for i in fileData:
