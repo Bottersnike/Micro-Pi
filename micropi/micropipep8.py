@@ -58,6 +58,7 @@ mbedUploading = False
 pipes = None
 WORKINGDIR = os.getcwd()
 
+
 def printError():
     data = ''
     try:
@@ -71,10 +72,10 @@ def printError():
              'release',
              'system',
              'version',
-            ]
+             ]
         for i in d:
-            exec('a=platform.%s()'%i)
-            data += str(i) + ' ' +  str(a) + '\n'
+            exec('a=platform.%s()' % i)
+            data += str(i) + ' ' + str(a) + '\n'
         data += '\ngtk ' + str(gtk.ver)
         data += '\nplatform' + str(platform.__version__)
         data += '\ntarfile' + str(tarfile.__version__)
@@ -88,7 +89,9 @@ def printError():
     finally:
         print data
 
+
 class EntryDialog(gtk.MessageDialog):
+
     def __init__(self, *args, **kwargs):
         if 'default_value' in kwargs:
             default_value = kwargs['default_value']
@@ -116,29 +119,42 @@ class EntryDialog(gtk.MessageDialog):
             text = None
         return text
 
+
 def message(message, parent=None):
-    dia = gtk.MessageDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, message)
+    dia = gtk.MessageDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT,
+                            gtk.MESSAGE_INFO, gtk.BUTTONS_OK, message)
     dia.show()
     dia.run()
     dia.destroy()
     return False
 
+
 def ask(query, parent=None):
-    dia = gtk.MessageDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query)
+    dia = gtk.MessageDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT,
+                            gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query)
     dia.show()
-    rtn=dia.run()
+    rtn = dia.run()
     dia.destroy()
     return rtn == gtk.RESPONSE_YES
 
+
 def askQ(query, prompt=None, parent=None):
     if prompt:
-        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query, default_value=prompt)
+        dia = EntryDialog(
+            parent,
+            gtk.DIALOG_DESTROY_WITH_PARENT,
+            gtk.MESSAGE_QUESTION,
+            gtk.BUTTONS_OK_CANCEL,
+            query,
+            default_value=prompt)
     else:
-        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
+        dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT,
+                          gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
     dia.show()
-    rtn=dia.run()
+    rtn = dia.run()
     dia.destroy()
     return rtn
+
 
 def uBitPoller():
     global uBitFound
@@ -151,14 +167,18 @@ def uBitPoller():
             uBitFound = os.path.exists(SETTINGS['mbitLocation'])
             if not (uBitUploading and uBitFound):
                 if uBitFound and not last[self][0]:
-                    gobject.idle_add(self.indicator.set_from_file, "data/uBitFound.png")
+                    gobject.idle_add(
+                        self.indicator.set_from_file, "data/uBitFound.png")
                 elif last[self][0] and not uBitFound:
-                    gobject.idle_add(self.indicator.set_from_file, "data/uBitNotFound.png")
+                    gobject.idle_add(
+                        self.indicator.set_from_file, "data/uBitNotFound.png")
                     uBitUploading = False
             else:
-                gobject.idle_add(self.indicator.set_from_file, "data/uBitUploading.png")
+                gobject.idle_add(self.indicator.set_from_file,
+                                 "data/uBitUploading.png")
             last[self] = (uBitFound, uBitUploading)
         time.sleep(0.2)
+
 
 def pipePoller(self):
     import sys
@@ -167,6 +187,7 @@ def pipePoller(self):
     global uBitUploading
     global uBitFound
     global pipes
+
     def addText(self, text):
         for self in OPENWINDOWS:
             tb = self.consoleBody.get_buffer()
@@ -180,9 +201,9 @@ def pipePoller(self):
             except UnexpectedEndOfStream:
                 pass
 
-            if type(d1) != str:
+            if not isinstance(d1, str):
                 d1 = str(d1, encoding="utf-8")
-            if type(d2) != str:
+            if not isinstance(d2, str):
                 d2 = str(d2, encoding="utf-8")
             sys.stdout.write(d1)
             sys.stdout.write(d2)
@@ -204,7 +225,9 @@ At line %d, index %d:
                 pipes = None
                 mbedBuilding = False
                 os.chdir(WORKINGDIR)
-                if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation):
+                if os.path.exists(
+                    '%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' %
+                        buildLocation):
                     gobject.idle_add(addText, self, "Done!\n")
                     if mbedUploading and uBitFound:
                         uBitUploading = True
@@ -226,23 +249,23 @@ Micro:Pi knows where to find it.""")
         else:
             time.sleep(0.1)
 
+
 def upload(self):
     global mbedUploading
-    if os.path.exists('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation):
-        if os.path.exists(SETTINGS['mbitLocation']):
-            end = open('%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' % buildLocation).read()
-            open(
-                '%s/microbit-build-combined.hex' % SETTINGS['mbitLocation'],
-                'w'
-            ).write(end)
-        else:
-            gobject.idle_add(self.message, """Cannot upload!
-Micro:Bit not found!
-Check it is plugged in and
-Micro:Pi knows where to find it.""")
+    if os.path.exists(
+        '%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' %
+            buildLocation):
+        end = open(
+            '%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex' %
+            buildLocation).read()
+        open(
+            '%s/microbit-build-combined.hex' % SETTINGS['mbitLocation'],
+            'w'
+        ).write(end)
     else:
         gobject.idle_add(self.message, """No build files avaliable""")
     mbedUploading = False
+
 
 def updateTitle():
     lastTitle = {}
@@ -264,8 +287,10 @@ def updateTitle():
 
         time.sleep(0.1)
 
+
 def serialPoller(self):
     start = True
+
     def addText(self, text):
         tb = self.consoleBody.get_buffer()
         tb.insert(tb.get_end_iter(), text)
@@ -282,18 +307,22 @@ def serialPoller(self):
                 pass
         else:
             try:
-                self.serialConnection = serial.serial_for_url(self.serialLocation)
+                self.serialConnection = serial.serial_for_url(
+                    self.serialLocation)
                 self.serialConnection.baudrate = self.baudrate
             except:
                 pass
             time.sleep(0.1)
 
+
 def loadSettings():
     return json.load(open(configLocation))
+
 
 def saveSettings():
     json.dump(SETTINGS, open(configLocation, 'w'),
               sort_keys=True, indent=4, separators=(',', ': '))
+
 
 def delFolder(path):
     if os.path.exists(path):
@@ -304,9 +333,10 @@ def delFolder(path):
             else:
                 os.remove(os.path.join(path, i))
 
+
 def setupBEnv():
     #tf = tarfile.open("buildenv.tar.gz", 'r:gz')
-    #tf.extractall(MICROPIDIR)
+    # tf.extractall(MICROPIDIR)
     _dir = os.getcwd()
     os.chdir(MICROPIDIR)
     os.mkdir("microbit-build")
@@ -316,10 +346,12 @@ def setupBEnv():
     os.system("yotta install lancaster-university/microbit")
     d = json.load(open("module.json"))
     d["bin"] = "./source"
-    json.dump(d, open("module.json", "w"), sort_keys=True, indent=4, separators=(',', ': '))
+    json.dump(d, open("module.json", "w"), sort_keys=True,
+              indent=4, separators=(',', ': '))
     os.chdir("..")
     shutil.move("microbit-build", "buildEnv")
     os.chdir(_dir)
+
 
 class NBSR:
     """
@@ -336,8 +368,9 @@ class NBSR:
         def _populateQueue(stream, queue):
             while self.__a:
                 line = stream.readline()
-                if type(line) == str:
+                if isinstance(line, str):
                     queue.put(line)
+
         def _killWhenDone(parent):
             parent.wait()
             self.__a = False
@@ -373,27 +406,34 @@ class NBSR:
     def alive(self):
         return self._a
 
+
 class UnexpectedEndOfStream(BaseException):
     pass
 
+
 class MainWin:
+
     def __init__(self, fileData=None):
         self.active = True
         mgr = gtkSourceView.style_scheme_manager_get_default()
-        self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+        self.style_scheme = mgr.get_scheme(
+            'tango' if SETTINGS['theme'] == 'light' else 'oblivion')
         self.language_manager = gtkSourceView.language_manager_get_default()
         self.language = self.language_manager.get_language('cpp')
 
         self.window = gtk.Window()
         self.fullscreenToggler = FullscreenToggler(self.window)
-        self.window.connect_object('key-press-event', FullscreenToggler.toggle, self.fullscreenToggler)
+        self.window.connect_object(
+            'key-press-event',
+            FullscreenToggler.toggle,
+            self.fullscreenToggler)
         self.window.set_title('Micro:Pi')
         self.window.set_icon_from_file('data/icon.png')
         self.window.resize(750, 500)
-        #if SETTINGS['theme'] == 'dark':
-            #colour = gtk.gdk.color_parse('#242424')
-        #else:
-            #colour = gtk.gdk.color_parse('#E5E5E5')
+        # if SETTINGS['theme'] == 'dark':
+        # colour = gtk.gdk.color_parse('#242424')
+        # else:
+        # colour = gtk.gdk.color_parse('#E5E5E5')
         #self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.window.connect("delete_event", self.destroy)
@@ -412,85 +452,102 @@ class MainWin:
 
         def loadEXPMen(path):
             men = []
-            p = os.listdir(path)
-            p.sort()
+            p = sorted(os.listdir(path))
             for i in p:
                 if not os.path.isdir(os.path.join(path, i)):
-                    if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention']:
-                        ni = i[:-(len(SETTINGS['fileExtention'])+1)]
+                    if i[-(len(SETTINGS['fileExtention']) + 1)                         :] == '.' + SETTINGS['fileExtention']:
+                        ni = i[:-(len(SETTINGS['fileExtention']) + 1)]
                     else:
                         ni = i
-                    men.append((ni, (self.loadExample, '', '', os.path.join(path, i))))
+                    men.append(
+                        (ni, (self.loadExample, '', '', os.path.join(path, i))))
                 else:
                     men.append((i, loadEXPMen(os.path.join(path, i))))
             return men
 
-        #exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
-                   #for i in os.listdir('examples')]
+        # exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
+            # for i in os.listdir('examples')]
         exampleMenu = loadEXPMen("examples")
 
         menuData = [
-                    ("_File", [
-                              ("_New Project", (self.newProject, gtk.STOCK_NEW, '<Control>N')),
-                              ("Add _Page", (self.newPage, gtk.STOCK_NEW, '')),
-                              ("_Examples", exampleMenu),
-                              ("_Import File", (self.importFile, gtk.STOCK_ADD, '<Control>I')),
-                              ("_Open", (self.openFile, gtk.STOCK_OPEN, '<Control>O')),
-                              ("_Save", (self.save, gtk.STOCK_SAVE, '<Control>S')),
-                              ("Save _As", (self.saveAs, gtk.STOCK_SAVE_AS, '')),
-                              ('', ''),
-                              ("_Quit", (self.destroy, gtk.STOCK_QUIT, '<Control>Q'))
-                             ]
-                    ),
-                    ("_Edit", [
-                               ("_Undo", (self.sendUndo, gtk.STOCK_UNDO, '<Control>Z')),
-                               ("_Redo", (self.sendRedo, gtk.STOCK_REDO, '<Control>Y')),
-                               ('', ''),
-                               ("Cu_t", (self.sendCut, gtk.STOCK_CUT, '<Control>X')),
-                               ("_Copy", (self.sendCopy, gtk.STOCK_COPY, '<Control>C')),
-                               ("_Paste", (self.sendPaste, gtk.STOCK_PASTE, '<Control>V')),
-                               ('', ''),
-                               ("Select _All", (self.sendSelectAll, gtk.STOCK_SELECT_ALL, '<Control>A')),
-                               ('', ''),
-                               ("Preference_s", [
-                                                 ('Set Micro:Bit Location', (self.setUBitLoc, '', '')),
-                                                 ("Enable _Quick Statrt", (self.toggleQS, '', '', '', 'checkbox', SETTINGS['quickstart'])),
-                                                 ("_Theme", [
-                                                             ("Light", (self.setTheme, '', '', '', 'radio', SETTINGS['theme'] == 'light', 'radioGroup2', 'light')),
-                                                             ("Dark", (self.setTheme, '', '', '', 'radio', SETTINGS['theme'] == 'dark', 'radioGroup2', 'dark')),
-                                                            ])
-                                                ]
-                               ),
-                              ]
-                    ),
-                    ("_View", [
-                               ("Show _Line Numbers", (self.lineNumbersToggle, '', '', '', 'checkbox', True)),
-                               ("Enable Auto _Indent", (self.autoIndentToggle, '', '', '', 'checkbox', True)),
-                               ("_Tab Width", [
-                                              ("2", (self.setTabWidth, '', '', '', 'radio', False, 'radioGroup1', 2)),
-                                              ("4", (self.setTabWidth, '', '', '', 'radio', True, 'radioGroup1', 4)),
-                                              ("6", (self.setTabWidth, '', '', '', 'radio', False, 'radioGroup1', 6)),
-                                              ("8", (self.setTabWidth, '', '', '', 'radio', False, 'radioGroup1', 8)),
-                                              ("10", (self.setTabWidth, '', '', '', 'radio', False, 'radioGroup1', 10)),
-                                              ("12", (self.setTabWidth, '', '', '', 'radio', False, 'radioGroup1', 12)),
-                                             ]
-                               ),
-                              ]
-                    ),
-                    ("_Deploy", [
-                                ("_Build", (self.startBuild, gtk.STOCK_EXECUTE, '<Control>B')),
-                                ("Build and _Upload", (self.startBuildAndUpload, '', '<Control>U')),
-                                ("_Force Upload", (self.forceUpload, gtk.STOCK_DISCONNECT, '')),
-                                ('', ''),
-                                ("Serial _Monitor", (self.serialConsole.toggleVis, '', '<Control>M'))
-                               ]
-                    ),
-                    ("_Help", [
-                               ("_Website", (self.website, gtk.STOCK_HELP, 'F1')),
-                               ("_About", (self.showAbout, gtk.STOCK_ABOUT, '')),
-                              ]
-                    ),
-                   ]
+            ("_File", [
+                ("_New Project", (self.newProject, gtk.STOCK_NEW, '<Control>N')),
+                ("Add _Page", (self.newPage, gtk.STOCK_NEW, '')),
+                ("_Examples", exampleMenu),
+                ("_Import File", (self.importFile,
+                                  gtk.STOCK_ADD, '<Control>I')),
+                ("_Open", (self.openFile, gtk.STOCK_OPEN, '<Control>O')),
+                ("_Save", (self.save, gtk.STOCK_SAVE, '<Control>S')),
+                ("Save _As", (self.saveAs, gtk.STOCK_SAVE_AS, '')),
+                ('', ''),
+                ("_Quit", (self.destroy, gtk.STOCK_QUIT, '<Control>Q'))
+            ]
+            ),
+            ("_Edit", [
+                ("_Undo", (self.sendUndo, gtk.STOCK_UNDO, '<Control>Z')),
+                ("_Redo", (self.sendRedo, gtk.STOCK_REDO, '<Control>Y')),
+                ('', ''),
+                ("Cu_t", (self.sendCut, gtk.STOCK_CUT, '<Control>X')),
+                ("_Copy", (self.sendCopy, gtk.STOCK_COPY, '<Control>C')),
+                ("_Paste", (self.sendPaste,
+                            gtk.STOCK_PASTE, '<Control>V')),
+                ('', ''),
+                ("Select _All", (self.sendSelectAll,
+                                 gtk.STOCK_SELECT_ALL, '<Control>A')),
+                ('', ''),
+                ("Preference_s", [
+                    ('Set Micro:Bit Location',
+                     (self.setUBitLoc, '', '')),
+                    ("Enable _Quick Statrt", (self.toggleQS, '', '', '', 'checkbox', SETTINGS[
+                        'quickstart'])),
+                    ("_Theme", [
+                        ("Light", (self.setTheme, '', '', '', 'radio', SETTINGS[
+                            'theme'] == 'light', 'radioGroup2', 'light')),
+                        ("Dark", (self.setTheme, '', '', '', 'radio', SETTINGS[
+                            'theme'] == 'dark', 'radioGroup2', 'dark')),
+                    ])
+                ]
+                ),
+            ]
+            ),
+            ("_View", [
+                ("Show _Line Numbers", (self.lineNumbersToggle,
+                                        '', '', '', 'checkbox', True)),
+                ("Enable Auto _Indent", (self.autoIndentToggle,
+                                         '', '', '', 'checkbox', True)),
+                ("_Tab Width", [
+                    ("2", (self.setTabWidth, '', '', '',
+                           'radio', False, 'radioGroup1', 2)),
+                    ("4", (self.setTabWidth, '', '', '',
+                           'radio', True, 'radioGroup1', 4)),
+                    ("6", (self.setTabWidth, '', '', '',
+                           'radio', False, 'radioGroup1', 6)),
+                    ("8", (self.setTabWidth, '', '', '',
+                           'radio', False, 'radioGroup1', 8)),
+                    ("10", (self.setTabWidth, '', '', '',
+                            'radio', False, 'radioGroup1', 10)),
+                    ("12", (self.setTabWidth, '', '', '',
+                            'radio', False, 'radioGroup1', 12)),
+                ]
+                ),
+            ]
+            ),
+            ("_Deploy", [
+                ("_Build", (self.startBuild, gtk.STOCK_EXECUTE, '<Control>B')),
+                ("Build and _Upload",
+                 (self.startBuildAndUpload, '', '<Control>U')),
+                ("_Force Upload", (self.forceUpload, gtk.STOCK_DISCONNECT, '')),
+                ('', ''),
+                ("Serial _Monitor",
+                 (self.serialConsole.toggleVis, '', '<Control>M'))
+            ]
+            ),
+            ("_Help", [
+                ("_Website", (self.website, gtk.STOCK_HELP, 'F1')),
+                ("_About", (self.showAbout, gtk.STOCK_ABOUT, '')),
+            ]
+            ),
+        ]
 
         agr = gtk.AccelGroup()
         self.window.add_accel_group(agr)
@@ -503,7 +560,7 @@ class MainWin:
                     sep = gtk.SeparatorMenuItem()
                     sep.show()
                     np.append(sep)
-                elif type(i[1]) == list:
+                elif isinstance(i[1], list):
                     dt = loadMenu(i[1], False)
                     mi = gtk.MenuItem(i[0])
                     mi.show()
@@ -523,7 +580,8 @@ class MainWin:
                             mi.connect_object("activate", dat[0], dat[3])
                     if dat[2]:
                         key, mod = gtk.accelerator_parse(dat[2])
-                        mi.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
+                        mi.add_accelerator(
+                            "activate", agr, key, mod, gtk.ACCEL_VISIBLE)
                     mi.show()
                     np.append(mi)
                 elif len(i[1]) > 4:
@@ -551,7 +609,7 @@ class MainWin:
             return np
 
         self.menu = loadMenu(menuData)
-        self.table.attach(self.menu, 0, 1, 0, 1, yoptions = 0)
+        self.table.attach(self.menu, 0, 1, 0, 1, yoptions=0)
         self.menu.show()
 
         tbW = gtk.VBox(False)
@@ -561,7 +619,6 @@ class MainWin:
         self.indicator.set_from_file("data/uBitNotFound.png")
         self.indicator.show()
         self.toolbar.pack_start(self.indicator, False)
-
 
         self.toolbar.show()
         tbW.pack_start(self.toolbar, True, True, 0)
@@ -586,7 +643,7 @@ int main()
     }
 }
 """)]
-        elif type(fileData) == dict:
+        elif isinstance(fileData, dict):
             fd = []
             for i in fileData:
                 fd.append((i, fileData[i]))
@@ -635,7 +692,8 @@ int main()
         dia.set_property('version', '0.0.1')
         dia.set_property('copyright', '(c) Nathan Taylor 2016')
         dia.set_property('website', 'http://bottersnike.github.io/Micro-Pi')
-        dia.set_property('comments', 'A pure python IDE for the BBC:MicroBit for C++')
+        dia.set_property(
+            'comments', 'A pure python IDE for the BBC:MicroBit for C++')
         dia.set_property('license', open('data/LICENSE').read())
         dia.show()
         dia.run()
@@ -709,12 +767,16 @@ int main()
             self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
             mgr = gtkSourceView.style_scheme_manager_get_default()
-            self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+            self.style_scheme = mgr.get_scheme(
+                'tango' if SETTINGS['theme'] == 'light' else 'oblivion')
             for f in self.notebook:
                 f.get_child().props.buffer.set_style_scheme(self.style_scheme)
             self.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
-            if SENDIMAGE: self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
-            self.serialConsole.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
+            if SENDIMAGE:
+                self.serialConsole.imageCreator.window.modify_bg(
+                    gtk.STATE_NORMAL, colour)
+            self.serialConsole.consoleBody.props.buffer.set_style_scheme(
+                self.style_scheme)
             self.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
 
     def addNotebookPage(self, title, content):
@@ -759,10 +821,16 @@ int main()
         self.notebook.append_page(area, top)
 
     def openFile(self, *args):
-        if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-            fn = gtk.FileChooserDialog(title="Save File",
-                                       action=gtk.FILE_CHOOSER_ACTION_OPEN,
-                                       buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        if (not self.getModified()) or self.ask(
+                "There are unsaved files.\nContinue?"):
+            fn = gtk.FileChooserDialog(
+                title="Save File",
+                action=gtk.FILE_CHOOSER_ACTION_OPEN,
+                buttons=(
+                    gtk.STOCK_CANCEL,
+                    gtk.RESPONSE_CANCEL,
+                    gtk.STOCK_OPEN,
+                    gtk.RESPONSE_OK))
             _filter = gtk.FileFilter()
             _filter.set_name("Micro:Pi Files")
             _filter.add_pattern("*.%s" % SETTINGS['fileExtention'])
@@ -828,9 +896,9 @@ int main()
             txt = tb.get_text(*tb.get_bounds())
             files[fn] = txt
         data = base64.b64encode(pickle.dumps(files))
-        data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
+        data = "".join(data[i:i + 64] + "\n" for i in xrange(0, len(data), 64))
         if self.saveLocation:
-            if self.saveLocation[-len(SETTINGS["fileExtention"]):] != SETTINGS["fileExtention"]:
+            if self.saveLocation[-len(SETTINGS["fileExtention"])                                 :] != SETTINGS["fileExtention"]:
                 self.saveLocation += SETTINGS["fileExtention"]
             open(self.saveLocation, 'w').write(data)
             self.setSaved()
@@ -838,9 +906,14 @@ int main()
             self.saveAs()
 
     def saveAs(self, *args):
-        fn = gtk.FileChooserDialog(title="Save File As",
-                                   action=gtk.FILE_CHOOSER_ACTION_SAVE,
-                                   buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+        fn = gtk.FileChooserDialog(
+            title="Save File As",
+            action=gtk.FILE_CHOOSER_ACTION_SAVE,
+            buttons=(
+                gtk.STOCK_CANCEL,
+                gtk.RESPONSE_CANCEL,
+                gtk.STOCK_SAVE,
+                gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
         _filter.set_name("Micro:Pi Files")
         _filter.add_pattern("*.%s" % SETTINGS['fileExtention'])
@@ -860,11 +933,11 @@ int main()
             txt = tb.get_text(*tb.get_bounds())
             files.append([fin, txt])
         data = base64.b64encode(pickle.dumps(files))
-        data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
+        data = "".join(data[i:i + 64] + "\n" for i in xrange(0, len(data), 64))
 
         if resp == gtk.RESPONSE_OK:
             fp = fn.get_filename()
-            if fp[-len(SETTINGS["fileExtention"]):] != SETTINGS["fileExtention"]:
+            if fp[-len(SETTINGS["fileExtention"])                  :] != SETTINGS["fileExtention"]:
                 fp += SETTINGS["fileExtention"]
             open(fp, 'w').write(data)
             self.setSaved()
@@ -872,7 +945,8 @@ int main()
         fn.destroy()
 
     def destroy(self, *args):
-        if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
+        if (not self.getModified()) or self.ask(
+                "There are unsaved files.\nContinue?"):
             self.active = False
             self.window.hide()
             kill = True
@@ -885,36 +959,59 @@ int main()
         return True
 
     def message(self, message):
-        dia = gtk.MessageDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, message)
+        dia = gtk.MessageDialog(
+            self.window,
+            gtk.DIALOG_DESTROY_WITH_PARENT,
+            gtk.MESSAGE_INFO,
+            gtk.BUTTONS_OK,
+            message)
         dia.show()
         dia.run()
         dia.destroy()
         return False
 
     def ask(self, query):
-        dia = gtk.MessageDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, query)
+        dia = gtk.MessageDialog(
+            self.window,
+            gtk.DIALOG_DESTROY_WITH_PARENT,
+            gtk.MESSAGE_QUESTION,
+            gtk.BUTTONS_YES_NO,
+            query)
         dia.show()
-        rtn=dia.run()
+        rtn = dia.run()
         dia.destroy()
         return rtn == gtk.RESPONSE_YES
 
     def askQ(self, query, prompt=None):
         if prompt:
-            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query, default_value=prompt)
+            dia = EntryDialog(
+                self.window,
+                gtk.DIALOG_DESTROY_WITH_PARENT,
+                gtk.MESSAGE_QUESTION,
+                gtk.BUTTONS_OK_CANCEL,
+                query,
+                default_value=prompt)
         else:
-            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
+            dia = EntryDialog(
+                self.window,
+                gtk.DIALOG_DESTROY_WITH_PARENT,
+                gtk.MESSAGE_QUESTION,
+                gtk.BUTTONS_OK_CANCEL,
+                query)
         dia.show()
-        rtn=dia.run()
+        rtn = dia.run()
         dia.destroy()
         return rtn
 
     def loadExample(self, example):
         if os.path.exists(example):
-            #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
+            # if (not self.getModified()) or self.ask("There are unsaved
+            # files.\nContinue?"):
             text = open(example).read()
             try:
                 try:
-                    data = pickle.loads(base64.b64decode(text.replace("\n", "")))
+                    data = pickle.loads(
+                        base64.b64decode(text.replace("\n", "")))
                 except Exception as e:
                     data = pickle.loads(text)
 
@@ -927,7 +1024,8 @@ int main()
                 yes = False
 
     def newProject(self, *args):
-        #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
+        # if (not self.getModified()) or self.ask("There are unsaved
+        # files.\nContinue?"):
         fileData = [("main.cpp", """#include "header.h"
 #include "MicroBit.h"
 
@@ -965,7 +1063,8 @@ void app_main()
             mbedBuilding = True
             self.clearBuild()
             for f in self.notebook:
-                fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
+                fn = self.notebook.get_tab_label(
+                    f).get_children()[0].get_label()
                 tb = f.get_child().get_buffer()
                 text = tb.get_text(*tb.get_bounds())
                 open(os.path.join(buildLocation, "source/%s" %
@@ -981,7 +1080,7 @@ void app_main()
                     stderr=PIPE,
                     stdin=PIPE,
                     stdout=PIPE,
-                    close_fds = True
+                    close_fds=True
                 )
             else:
                 p = Popen(
@@ -990,7 +1089,7 @@ void app_main()
                     stderr=PIPE,
                     stdin=PIPE,
                     stdout=PIPE,
-                    close_fds = True
+                    close_fds=True
                 )
             pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
@@ -1012,7 +1111,8 @@ void app_main()
             mbedUploading = True
             self.clearBuild()
             for f in self.notebook:
-                fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
+                fn = self.notebook.get_tab_label(
+                    f).get_children()[0].get_label()
                 tb = f.get_child().get_buffer()
                 text = tb.get_text(*tb.get_bounds())
                 open(os.path.join(buildLocation, "source/%s" %
@@ -1028,7 +1128,7 @@ void app_main()
                     stderr=PIPE,
                     stdin=PIPE,
                     stdout=PIPE,
-                    close_fds = True
+                    close_fds=True
                 )
             else:
                 p = Popen(
@@ -1037,14 +1137,19 @@ void app_main()
                     stderr=PIPE,
                     stdin=PIPE,
                     stdout=PIPE,
-                    close_fds = True
+                    close_fds=True
                 )
             pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
     def importFile(self, *args):
-        fn = gtk.FileChooserDialog(title="Import File",
-                                   action=gtk.FILE_CHOOSER_ACTION_OPEN,
-                                   buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        fn = gtk.FileChooserDialog(
+            title="Import File",
+            action=gtk.FILE_CHOOSER_ACTION_OPEN,
+            buttons=(
+                gtk.STOCK_CANCEL,
+                gtk.RESPONSE_CANCEL,
+                gtk.STOCK_OPEN,
+                gtk.RESPONSE_OK))
         _filter = gtk.FileFilter()
         _filter.set_name("C++ Files")
         _filter.add_pattern("*.cpp")
@@ -1070,7 +1175,9 @@ void app_main()
         global uBitUploading
         global uBitFound
         global pipes
-        if os.path.exists("%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex" % buildLocation):
+        if os.path.exists(
+            "%s/build/bbc-microbit-classic-gcc/source/microbit-build-combined.hex" %
+                buildLocation):
             if (not mbedBuilding) and (not mbedUploading):
                 uBitUploading = True
                 thread = Thread(target=upload, args=(self,))
@@ -1079,7 +1186,8 @@ void app_main()
 
     def closePage(self, widget, *args):
         pn = self.notebook.page_num(widget)
-        if self.ask("Are you sure you want to delete this file?\nThis action cannot be undone!"):
+        if self.ask(
+                "Are you sure you want to delete this file?\nThis action cannot be undone!"):
             self.notebook.remove_page(pn)
             if self.notebook.get_n_pages() == 0:
                 self.addNotebookPage("main.cpp", '')
@@ -1090,7 +1198,8 @@ void app_main()
             self.addNotebookPage(pageName, '')
 
     def getModified(self):
-        return any([i.get_child().get_buffer().get_modified() for i in self.notebook])
+        return any([i.get_child().get_buffer().get_modified()
+                    for i in self.notebook])
 
     def setSaved(self):
         for i in self.notebook:
@@ -1108,7 +1217,9 @@ void app_main()
         thread.start()
         gtk.main()
 
+
 class SerialConsole:
+
     def __init__(self, indep=False):
         self.indep = indep
 
@@ -1118,7 +1229,8 @@ class SerialConsole:
         self.baudrate = 115200
         self.ports = list(list_ports.grep(''))
         self.serialLocation = self.ports[0][0] if self.ports else None
-        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(
+            self.serialLocation)
         if self.serialLocation is not None:
             self.serialConnection.baudrate = self.baudrate
 
@@ -1127,7 +1239,8 @@ class SerialConsole:
         thread.start()
 
         mgr = gtkSourceView.style_scheme_manager_get_default()
-        self.style_scheme = mgr.get_scheme("tango" if SETTINGS["theme"]=="light" else "oblivion")
+        self.style_scheme = mgr.get_scheme(
+            "tango" if SETTINGS["theme"] == "light" else "oblivion")
 
         self.window = gtk.Window()
         self.window.set_title("Serial Monitor")
@@ -1233,7 +1346,8 @@ class SerialConsole:
     def refresh(self, *args):
         self.ports = list(list_ports.grep(''))
         self.serialLocation = self.ports[0][0] if self.ports else None
-        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(
+            self.serialLocation)
         if self.serialLocation is not None:
             self.serialConnection.baudrate = self.baudrate
         self.gtkserialloc.get_model().clear()
@@ -1257,7 +1371,8 @@ class SerialConsole:
             newport = model[index][0]
             self.serialLocation = newport
             if not self.serialConnection:
-                self.serialConnection = serial.serial_for_url(self.serialLocation)
+                self.serialConnection = serial.serial_for_url(
+                    self.serialLocation)
             self.serialConnection.port = newport
             self.serialConnection.baudrate = self.baudrate
 
@@ -1291,6 +1406,7 @@ class SerialConsole:
     def showImageCreator(self, *args):
         self.imageCreator.show(self.insertImage)
 
+
 class ImageCreator():
 
     def __init__(self, *args, **kwargs):
@@ -1316,7 +1432,8 @@ class ImageCreator():
                 eb.add(i)
                 eb.hide()
                 eb.modify_bg(gtk.STATE_NORMAL, colour)
-                eb.connect_object("button-press-event", self.togglePart, (x, y))
+                eb.connect_object("button-press-event",
+                                  self.togglePart, (x, y))
 
                 eb2 = gtk.EventBox()
                 i2 = gtk.Image()
@@ -1325,7 +1442,8 @@ class ImageCreator():
                 eb2.add(i2)
                 eb2.show()
                 eb2.modify_bg(gtk.STATE_NORMAL, colour)
-                eb2.connect_object("button-press-event", self.togglePart, (x, y))
+                eb2.connect_object("button-press-event",
+                                   self.togglePart, (x, y))
 
                 self.buttons[(x, y)] = (eb, eb2)
 
@@ -1386,14 +1504,22 @@ class ImageCreator():
             self.buttons[pos][1].hide()
             self.buttons[pos][0].show()
 
+
 class FullscreenToggler(object):
+
     def __init__(self, window, keysym=gtk.keysyms.F11):
         self.window = window
         self.keysym = keysym
         self.window_is_fullscreen = False
-        self.window.connect_object("window-state-event", FullscreenToggler.on_window_state_change, self)
+        self.window.connect_object(
+            "window-state-event",
+            FullscreenToggler.on_window_state_change,
+            self)
+
     def on_window_state_change(self, event):
-        self.window_is_fullscreen = bool(gtk.gdk.WINDOW_STATE_FULLSCREEN & event.new_window_state)
+        self.window_is_fullscreen = bool(
+            gtk.gdk.WINDOW_STATE_FULLSCREEN & event.new_window_state)
+
     def toggle(self, event):
         if event.keyval == self.keysym:
             if self.window_is_fullscreen:
@@ -1401,10 +1527,13 @@ class FullscreenToggler(object):
             else:
                 self.window.fullscreen()
 
+
 class SplashScreen:
+
     def __init__(self):
         imageLoc = random.choice(os.listdir("data/splashScreens"))
-        imageSize = self.get_image_size(open(os.path.join("data/splashScreens", imageLoc), 'rb').read())
+        imageSize = self.get_image_size(
+            open(os.path.join("data/splashScreens", imageLoc), 'rb').read())
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_decorated(False)
@@ -1425,21 +1554,29 @@ class SplashScreen:
         self.refresh()
         self.window.show_all()
         self.refresh()
+
     def get_image_size(self, data):
         def is_png(data):
-            return (data[:8] == "\211PNG\r\n\032\n" and (data[12:16] == "IHDR"))
+            return (
+                data[
+                    :8] == "\211PNG\r\n\032\n" and (
+                    data[
+                        12:16] == "IHDR"))
         if is_png(data):
             w, h = struct.unpack(">LL", data[16:24])
             width = int(w)
             height = int(h)
             return width, height
         return -1, -1
+
     def set_text(self, text):
         self.lbl.props.label = text
         self.refresh()
+
     def refresh(self):
         while gtk.events_pending():
             gtk.main_iteration()
+
 
 def main(start="mainwin"):
     global SETTINGS
@@ -1501,7 +1638,11 @@ def main(start="mainwin"):
 
         if not os.path.exists(os.path.join(HOMEDIR, 'Documents')):
             os.mkdir(os.path.join(HOMEDIR, 'Documents'))
-        if not os.path.exists(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')):
+        if not os.path.exists(
+            os.path.join(
+                HOMEDIR,
+                'Documents',
+                'MicroPi Projects')):
             os.mkdir(os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects'))
         SAVEDIR = os.path.join(HOMEDIR, 'Documents', 'MicroPi Projects')
 
@@ -1514,8 +1655,8 @@ def main(start="mainwin"):
             #f = tempfile.mktemp()
             #open(f, 'wb').write(base64.b64decode(buildenv.benv.replace('\n', '')))
             #tf = tarfile.open(f, 'r:gz')
-            #tf.extractall(MICROPIDIR)
-            #os.remove(f)
+            # tf.extractall(MICROPIDIR)
+            # os.remove(f)
 
         buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
 
@@ -1551,7 +1692,7 @@ MicroBit uBit;
                     stderr=PIPE,
                     stdin=PIPE,
                     stdout=PIPE,
-                    close_fds = True
+                    close_fds=True
                 )
             else:
                 p = Popen(
@@ -1560,7 +1701,7 @@ MicroBit uBit;
                     stderr=PIPE,
                     stdin=PIPE,
                     stdout=PIPE,
-                    close_fds = True
+                    close_fds=True
                 )
             pipes = [p.stdin, NBSR(p.stdout, p), NBSR(p.stderr, p)]
 
@@ -1571,9 +1712,9 @@ MicroBit uBit;
                 except UnexpectedEndOfStream:
                     pass
 
-                if type(d1) != str:
+                if not isinstance(d1, str):
                     d1 = str(d1, encoding="utf-8")
-                if type(d2) != str:
+                if not isinstance(d2, str):
                     d2 = str(d2, encoding="utf-8")
 
                 if d1:
