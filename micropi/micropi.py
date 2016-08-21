@@ -1116,8 +1116,10 @@ class SerialConsole:
 
         self.baudrate = 115200
         self.ports = list(list_ports.grep(''))
-        self.serialLocation = self.ports[0][0] if self.ports else None
-        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        #self.serialLocation = self.ports[0][0] if self.ports else None
+        self.serialLocation =  None
+        #self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        self.serialConnection = None
         if self.serialLocation is not None:
             self.serialConnection.baudrate = self.baudrate
 
@@ -1200,14 +1202,22 @@ class SerialConsole:
         self.clearButton.connect("clicked", self.clear)
         self.hbox.pack_start(self.clearButton, True, False)
 
+        self.connHBox = gtk.HBox()
+
         self.gtkserialloc = gtk.combo_box_new_text()
         for i in self.ports:
             self.gtkserialloc.append_text(i[0])
         self.gtkserialloc.show()
         self.gtkserialloc.set_active(0)
-        self.gtkserialloc.connect("changed", self.portchange)
+        #self.gtkserialloc.connect("changed", self.portchange)
         self.gtkserialloc.show()
-        self.hbox.pack_end(self.gtkserialloc, False, False)
+        self.hbox.pack_start(self.gtkserialloc, False, False)
+
+        self.connectButton = gtk.Button("Connect")
+        self.connectButton.show()
+        self.connectButton.connect("clicked", self.connectToPort)
+        self.hbox.pack_start(self.connectButton, False, False)
+
         self.vbox.pack_start(self.hbox, False, False, 0)
 
         self.window.add(self.vbox)
@@ -1231,10 +1241,10 @@ class SerialConsole:
 
     def refresh(self, *args):
         self.ports = list(list_ports.grep(''))
-        self.serialLocation = self.ports[0][0] if self.ports else None
-        self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
-        if self.serialLocation is not None:
-            self.serialConnection.baudrate = self.baudrate
+        #self.serialLocation = self.ports[0][0] if self.ports else None
+        #self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        #if self.serialLocation is not None:
+            #self.serialConnection.baudrate = self.baudrate
         self.gtkserialloc.get_model().clear()
         for i in self.ports:
             self.gtkserialloc.append_text(i[0])
@@ -1248,6 +1258,9 @@ class SerialConsole:
         if not self.serialConnection:
             self.serialConnection = serial.serial_for_url(self.serialLocation)
         self.serialConnection.baudrate = newbdrate
+
+    def connectToPort(self, *args):
+        self.portchange(self.gtkserialloc)
 
     def portchange(self, widget, *args):
         model = widget.get_model()
