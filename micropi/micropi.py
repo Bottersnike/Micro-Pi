@@ -1290,7 +1290,7 @@ class SerialConsole:
     def showImageCreator(self, *args):
         self.imageCreator.show(self.insertImage)
 
-class ImageCreator():
+class ImageCreator:
 
     def __init__(self, *args, **kwargs):
         self.window = gtk.Window()
@@ -1440,6 +1440,79 @@ class SplashScreen:
         while gtk.events_pending():
             gtk.main_iteration()
 
+class SettingsDialog(gtk.Dialog):
+
+    def __init__(self, parent=None):
+
+        kwargs = {"parent":parent, "flags":gtk.DIALOG_DESTROY_WITH_PARENT, "title":"Settings", "buttons":None}
+
+        super(SettingsDialog, self).__init__(**kwargs)
+
+        vb = gtk.VBox()
+
+        tb = gtk.Table(2, 3)
+        tb.set_row_spacings(10)
+
+        #hb1 = gtk.HBox()
+        l1 = gtk.Label("BBC Micro:Bit Location")
+        #hb1.pack_start(l1, True, False)
+        fcb1 = gtk.FileChooserButton(title="Set BBC Micro:Bit Location")
+        fcb1.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        fcb1.set_filename(SETTINGS["mbitLocation"])
+        #hb1.pack_end(fcb1, True, True)
+
+        tb.attach(l1, 0, 1, 0, 1)
+        tb.attach(fcb1, 1, 2, 0, 1)
+        #vb.pack_start(hb1, True, False)
+
+        #hb1 = gtk.HBox()
+        l2 = gtk.Label("Quickstart")
+        #hb1.pack_start(l1, True, False)
+        s1 = gtk.CheckButton()
+        #hb1.pack_end(s1, True, True)
+        #vb.pack_start(hb1, True, False)
+
+        tb.attach(l2, 0, 1, 1, 2)
+        tb.attach(s1, 1, 2, 1, 2)
+
+        #hb1 = gtk.HBox()
+        l3 = gtk.Label("Theme")
+        #hb1.pack_start(l1, True, False)
+
+        vb2 = gtk.VBox()
+        rb1 = gtk.RadioButton(None, "Light")
+        vb2.pack_start(rb1)
+        rb2 = gtk.RadioButton(rb1, "Dark")
+        vb2.pack_start(rb2)
+        if SETTINGS["theme"] == "dark": rb2.set_active(True)
+
+        #hb1.pack_end(vb2, True, True)
+
+        tb.attach(l3, 0, 1, 2, 3)
+        tb.attach(vb2, 1, 2, 2, 3)
+        #vb.pack_start(hb1, True, False)
+
+        #entry = gtk.Entry()
+        #entry.set_text(str(default_value))
+        #entry.connect("activate",
+        #              lambda ent, dlg, resp: dlg.response(resp),
+        #              self, gtk.RESPONSE_OK)
+
+        #self.vbox.pack_end(entry, True, True, 0)
+        self.vbox.pack_end(tb, True, True, 0)
+        self.vbox.show_all()
+
+    def set_value(self, text):
+        self.entry.set_text(text)
+
+    def run(self):
+        result = super(SettingsDialog, self).run()
+        if result == gtk.RESPONSE_OK:
+            print "Hi"
+        else:
+            print "Bye"
+        return text
+
 def main(start="mainwin"):
     global SETTINGS
     global configLocation
@@ -1587,6 +1660,12 @@ MicroBit uBit;
         import traceback
         print traceback.print_exc()
         sys.exit(1)
+
+    #sd=SettingsDialog()
+    #sd.run()
+    #sd.destroy()
+
+
     if start == "mainwin":
         main = MainWin()
         OPENWINDOWS.append(main)
