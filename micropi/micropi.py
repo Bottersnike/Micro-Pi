@@ -191,12 +191,12 @@ def uBitPoller():
             uBitFound = os.path.exists(SETTINGS['mbitLocation'])
             if not (uBitUploading and uBitFound):
                 if uBitFound and not last[self][0]:
-                    gobject.idle_add(self.indicator.set_from_file, "data/uBitFound.png")
+                    gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data/uBitFound.png"))
                 elif last[self][0] and not uBitFound:
-                    gobject.idle_add(self.indicator.set_from_file, "data/uBitNotFound.png")
+                    gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data/uBitNotFound.png"))
                     uBitUploading = False
             else:
-                gobject.idle_add(self.indicator.set_from_file, "data/uBitUploading.png")
+                gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data/uBitUploading.png"))
             last[self] = (uBitFound, uBitUploading)
         time.sleep(0.2)
 
@@ -467,7 +467,7 @@ class MainWin:
 
         #exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
                    #for i in os.listdir('examples')]
-        exampleMenu = loadEXPMen("examples")
+        exampleMenu = loadEXPMen(os.path.join(WORKINGDIR, "examples"))
 
         menuData = [
                     ("_File", [
@@ -590,7 +590,7 @@ class MainWin:
         self.toolbar = gtk.HBox(False)
 
         self.indicator = gtk.Image()
-        self.indicator.set_from_file("data/uBitNotFound.png")
+        self.indicator.set_from_file(os.path.join(WORKINGDIR, "data/uBitNotFound.png"))
         self.indicator.show()
         self.toolbar.pack_start(self.indicator, False)
 
@@ -957,7 +957,7 @@ int main()
         return rtn
 
     def loadExample(self, example):
-        if os.path.exists(example):
+        if os.path.exists(os.path.join(WORKINGDIR, example)):
             #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
             text = open(example).read()
             try:
@@ -1029,8 +1029,7 @@ void app_main()
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
-                    stdout=PIPE,
-                    close_fds = True
+                    stdout=PIPE
                 )
             else:
                 p = Popen(
@@ -1076,8 +1075,7 @@ void app_main()
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
-                    stdout=PIPE,
-                    close_fds = True
+                    stdout=PIPE
                 )
             else:
                 p = Popen(
@@ -1187,9 +1185,9 @@ class SerialConsole:
 
         self.window = gtk.Window()
         self.window.set_title("Serial Monitor")
-        self.window.set_icon_from_file("data/icon.png")
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data/icon.png"))
         self.window.resize(750, 400)
-        colour = gtk.gdk.color_parse("#242424")
+        colour = gtk.gdk.color_parse(DARKCOL)
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.vbox = gtk.VBox()
@@ -1363,8 +1361,8 @@ class ImageCreator:
     def __init__(self, *args, **kwargs):
         self.window = gtk.Window()
         self.window.set_title("Create An Image")
-        self.window.set_icon_from_file("data/icon.png")
-        colour = gtk.gdk.color_parse("#242424")
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data/icon.png"))
+        colour = gtk.gdk.color_parse(DARKCOL)
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.vvbox = gtk.VBox()
@@ -1378,7 +1376,7 @@ class ImageCreator:
             for x in range(5):
                 eb = gtk.EventBox()
                 i = gtk.Image()
-                i.set_from_file("data/selected.png")
+                i.set_from_file(os.path.join(WORKINGDIR, "data/selected.png"))
                 i.show()
                 eb.add(i)
                 eb.hide()
@@ -1387,7 +1385,7 @@ class ImageCreator:
 
                 eb2 = gtk.EventBox()
                 i2 = gtk.Image()
-                i2.set_from_file("data/unselected.png")
+                i2.set_from_file(os.path.join(WORKINGDIR, "data/unselected.png"))
                 i2.show()
                 eb2.add(i2)
                 eb2.show()
@@ -1470,20 +1468,20 @@ class FullscreenToggler(object):
 
 class SplashScreen:
     def __init__(self):
-        imageLoc = random.choice(os.listdir("data/splashScreens"))
-        imageSize = self.get_image_size(open(os.path.join("data/splashScreens", imageLoc), 'rb').read())
+        imageLoc = random.choice(os.listdir(os.path.join(WORKINGDIR, "data/splashScreens")))
+        imageSize = self.get_image_size(open(os.path.join(WORKINGDIR, "data/splashScreens", imageLoc), 'rb').read())
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_decorated(False)
         self.window.set_title("Micro:Pi")
-        self.window.set_icon_from_file("data/icon.png")
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data/icon.png"))
         self.window.set_size_request(imageSize[0], -1)
         self.window.set_position(gtk.WIN_POS_CENTER)
         main_vbox = gtk.VBox(False, 1)
         self.window.add(main_vbox)
         hbox = gtk.HBox(False, 0)
         self.img = gtk.Image()
-        self.img.set_from_file(os.path.join("data/splashScreens", imageLoc))
+        self.img.set_from_file(os.path.join(WORKINGDIR, "data/splashScreens", imageLoc))
         main_vbox.pack_start(self.img, True, True)
         self.lbl = gtk.Label('')
         font = pango.FontDescription("Monospace 7")
@@ -1717,8 +1715,7 @@ MicroBit uBit;
                     shell=True,
                     stderr=PIPE,
                     stdin=PIPE,
-                    stdout=PIPE,
-                    close_fds = True
+                    stdout=PIPE
                 )
             else:
                 p = Popen(
