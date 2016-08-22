@@ -116,6 +116,34 @@ class EntryDialog(gtk.MessageDialog):
             text = None
         return text
 
+class FolderDialog(gtk.MessageDialog):
+    def __init__(self, *args, **kwargs):
+        if 'default_value' in kwargs:
+            default_value = kwargs['default_value']
+            del kwargs['default_value']
+        else:
+            default_value = ''
+        super(FolderDialog, self).__init__(*args, **kwargs)
+
+        fcb1 = gtk.FileChooserButton(title="Set BBC Micro:Bit Location")
+        fcb1.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+
+        self.vbox.pack_end(fcb1, True, True, 0)
+        self.vbox.show_all()
+
+        self.fcb1 = fcb1
+
+    def set_value(self, text):
+        self.entry.set_text(text)
+
+    def run(self):
+        result = super(FolderDialog, self).run()
+        if result == gtk.RESPONSE_OK:
+            text = self.fcb1.get_filename()
+        else:
+            text = None
+        return text
+
 def message(message, parent=None):
     dia = gtk.MessageDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, message)
     dia.show()
@@ -135,6 +163,16 @@ def askQ(query, prompt=None, parent=None):
         dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query, default_value=prompt)
     else:
         dia = EntryDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
+    dia.show()
+    rtn=dia.run()
+    dia.destroy()
+    return rtn
+
+def askFolder(query, prompt=None, parent=None):
+    if prompt:
+        dia = FolderDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK, query, default_value=prompt)
+    else:
+        dia = FolderDialog(parent, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK, query)
     dia.show()
     rtn=dia.run()
     dia.destroy()
@@ -1573,9 +1611,11 @@ def main(start="mainwin"):
     "theme": "dark"
 }"""
         if not os.path.exists(os.path.join(MICROPIDIR, 'config.json')):
-            res = ask("Enable Quick Start?")
-            res2 = askQ("Micro:Bit Location")
-            if not res2:
+            #res = ask("Enable Quick Start?")
+            res = True
+            res2 = askFolder("Micro:Bit Location")
+            if res2 is None:
+                message("No location specified!\nUsing /media/MICROBIT")
                 res2 = "/media/MICROBIT"
             ss.set_text("Creating Config")
             print("Creating Config")
@@ -1601,6 +1641,8 @@ def main(start="mainwin"):
             #tf = tarfile.open(f, 'r:gz')
             #tf.extractall(MICROPIDIR)
             #os.remove(f)
+        if os.path.exists(os.path.join(MICROPIDIR, "micropi-build")):
+            delFolder(os.path.join(MICROPIDIR, "micropi-build"))
 
         buildLocation = os.path.join(MICROPIDIR, 'buildEnv')
 
