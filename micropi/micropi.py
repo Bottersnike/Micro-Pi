@@ -49,6 +49,8 @@ import shutil
 
 SENDIMAGE = False
 
+DARKCOL  = "#242424"
+LIGHTCOL = "#E5E5E5"
 
 OPENWINDOWS = []
 uBitUploading = False
@@ -429,9 +431,9 @@ class MainWin:
         self.window.set_icon_from_file('data/icon.png')
         self.window.resize(750, 500)
         #if SETTINGS['theme'] == 'dark':
-            #colour = gtk.gdk.color_parse('#242424')
+            #colour = gtk.gdk.color_parse(DARKCOL)
         #else:
-            #colour = gtk.gdk.color_parse('#E5E5E5')
+            #colour = gtk.gdk.color_parse(LIGHTCOL)
         #self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.window.connect("delete_event", self.destroy)
@@ -490,15 +492,7 @@ class MainWin:
                                ('', ''),
                                ("Select _All", (self.sendSelectAll, gtk.STOCK_SELECT_ALL, '<Control>A')),
                                ('', ''),
-                               ("Preference_s", [
-                                                 ('Set Micro:Bit Location', (self.setUBitLoc, '', '')),
-                                                 ("Enable _Quick Statrt", (self.toggleQS, '', '', '', 'checkbox', SETTINGS['quickstart'])),
-                                                 ("_Theme", [
-                                                             ("Light", (self.setTheme, '', '', '', 'radio', SETTINGS['theme'] == 'light', 'radioGroup2', 'light')),
-                                                             ("Dark", (self.setTheme, '', '', '', 'radio', SETTINGS['theme'] == 'dark', 'radioGroup2', 'dark')),
-                                                            ])
-                                                ]
-                               ),
+                               ("Preference_s", (self.showSettings, gtk.STOCK_PREFERENCES, '<Control><Alt>P'))
                               ]
                     ),
                     ("_View", [
@@ -659,6 +653,22 @@ int main()
 
         self.setTheme(None, SETTINGS['theme'])
 
+        if SETTINGS['theme'] == 'dark':
+            colour = gtk.gdk.color_parse(DARKCOL)
+        else:
+            colour = gtk.gdk.color_parse(LIGHTCOL)
+
+        self.window.modify_bg(gtk.STATE_NORMAL, colour)
+
+        mgr = gtkSourceView.style_scheme_manager_get_default()
+        self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+        for f in self.notebook:
+            f.get_child().props.buffer.set_style_scheme(self.style_scheme)
+        self.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
+        if SENDIMAGE: self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
+        self.serialConsole.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
+        self.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
+
         self.window.show()
 
         if len(sys.argv) > 1:
@@ -741,19 +751,21 @@ int main()
             SETTINGS['theme'] = theme
             saveSettings()
             if SETTINGS['theme'] == 'dark':
-                colour = gtk.gdk.color_parse('#242424')
+                colour = gtk.gdk.color_parse(DARKCOL)
             else:
-                colour = gtk.gdk.color_parse('#E5E5E5')
-            self.window.modify_bg(gtk.STATE_NORMAL, colour)
+                colour = gtk.gdk.color_parse(LIGHTCOL)
 
-            mgr = gtkSourceView.style_scheme_manager_get_default()
-            self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
-            for f in self.notebook:
-                f.get_child().props.buffer.set_style_scheme(self.style_scheme)
-            self.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
-            if SENDIMAGE: self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
-            self.serialConsole.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
-            self.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
+            for w in OPENWINDOWS:
+                w.window.modify_bg(gtk.STATE_NORMAL, colour)
+
+                mgr = gtkSourceView.style_scheme_manager_get_default()
+                w.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+                for f in self.notebook:
+                    f.get_child().props.buffer.set_style_scheme(self.style_scheme)
+                w.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
+                if SENDIMAGE: w.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
+                w.serialConsole.consoleBody.props.buffer.set_style_scheme(w.style_scheme)
+                w.consoleBody.props.buffer.set_style_scheme(w.style_scheme)
 
     def addNotebookPage(self, title, content):
         area = gtk.ScrolledWindow()
@@ -1133,6 +1145,11 @@ void app_main()
         for i in self.notebook:
             i.get_child().props.buffer.set_modified(False)
 
+    def showSettings(self, *args):
+        sd=SettingsDialog()
+        sd.run()
+        sd.destroy()
+
     def main(self):
         thread = Thread(target=uBitPoller)
         thread.daemon = True
@@ -1495,9 +1512,11 @@ class SettingsDialog(gtk.Dialog):
 
     def __init__(self, parent=None):
 
-        kwargs = {"parent":parent, "flags":gtk.DIALOG_DESTROY_WITH_PARENT, "title":"Settings", "buttons":None}
+        kwargs = {"parent":parent, "flags":gtk.DIALOG_DESTROY_WITH_PARENT|gtk.DIALOG_MODAL, "title":"Preferences", "buttons":(gtk.STOCK_OK, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)}
 
         super(SettingsDialog, self).__init__(**kwargs)
+
+        self.set_skip_taskbar_hint(True)
 
         vb = gtk.VBox()
 
@@ -1507,24 +1526,25 @@ class SettingsDialog(gtk.Dialog):
         #hb1 = gtk.HBox()
         l1 = gtk.Label("BBC Micro:Bit Location")
         #hb1.pack_start(l1, True, False)
-        fcb1 = gtk.FileChooserButton(title="Set BBC Micro:Bit Location")
-        fcb1.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
-        fcb1.set_filename(SETTINGS["mbitLocation"])
+        self.fcb1 = gtk.FileChooserButton(title="Set BBC Micro:Bit Location")
+        self.fcb1.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        self.fcb1.set_filename(SETTINGS["mbitLocation"])
         #hb1.pack_end(fcb1, True, True)
 
         tb.attach(l1, 0, 1, 0, 1)
-        tb.attach(fcb1, 1, 2, 0, 1)
+        tb.attach(self.fcb1, 1, 2, 0, 1)
         #vb.pack_start(hb1, True, False)
 
         #hb1 = gtk.HBox()
         l2 = gtk.Label("Quickstart")
         #hb1.pack_start(l1, True, False)
-        s1 = gtk.CheckButton()
+        self.s1 = gtk.CheckButton()
+        if SETTINGS["quickstart"]: self.s1.set_active(True)
         #hb1.pack_end(s1, True, True)
         #vb.pack_start(hb1, True, False)
 
         tb.attach(l2, 0, 1, 1, 2)
-        tb.attach(s1, 1, 2, 1, 2)
+        tb.attach(self.s1, 1, 2, 1, 2)
 
         #hb1 = gtk.HBox()
         l3 = gtk.Label("Theme")
@@ -1533,9 +1553,9 @@ class SettingsDialog(gtk.Dialog):
         vb2 = gtk.VBox()
         rb1 = gtk.RadioButton(None, "Light")
         vb2.pack_start(rb1)
-        rb2 = gtk.RadioButton(rb1, "Dark")
-        vb2.pack_start(rb2)
-        if SETTINGS["theme"] == "dark": rb2.set_active(True)
+        self.rb2 = gtk.RadioButton(rb1, "Dark")
+        vb2.pack_start(self.rb2)
+        if SETTINGS["theme"] == "dark": self.rb2.set_active(True)
 
         #hb1.pack_end(vb2, True, True)
 
@@ -1546,11 +1566,12 @@ class SettingsDialog(gtk.Dialog):
         #entry = gtk.Entry()
         #entry.set_text(str(default_value))
         #entry.connect("activate",
-        #              lambda ent, dlg, resp: dlg.response(resp),
-        #              self, gtk.RESPONSE_OK)
+                      #lambda ent, dlg, resp: dlg.response(resp),
+                      #self, gtk.RESPONSE_OK)
 
         #self.vbox.pack_end(entry, True, True, 0)
         self.vbox.pack_end(tb, True, True, 0)
+
         self.vbox.show_all()
 
     def set_value(self, text):
@@ -1559,10 +1580,29 @@ class SettingsDialog(gtk.Dialog):
     def run(self):
         result = super(SettingsDialog, self).run()
         if result == gtk.RESPONSE_OK:
-            print "Hi"
-        else:
-            print "Bye"
-        return text
+            SETTINGS["quickstart"] = self.s1.get_active()
+            SETTINGS["theme"] = "dark" if self.rb2.get_active() else "light"
+            SETTINGS["mbitLocation"] = self.fcb1.get_filename() if self.fcb1.get_filename() else SETTINGS["mbitLocation"]
+            saveSettings()
+
+            if SETTINGS['theme'] == 'dark':
+                colour = gtk.gdk.color_parse(DARKCOL)
+            else:
+                colour = gtk.gdk.color_parse(LIGHTCOL)
+
+            for w in OPENWINDOWS:
+                w.window.modify_bg(gtk.STATE_NORMAL, colour)
+
+                mgr = gtkSourceView.style_scheme_manager_get_default()
+                w.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
+                for f in w.notebook:
+                    f.get_child().props.buffer.set_style_scheme(w.style_scheme)
+                w.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
+                if SENDIMAGE: w.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
+                w.serialConsole.consoleBody.props.buffer.set_style_scheme(w.style_scheme)
+                w.consoleBody.props.buffer.set_style_scheme(w.style_scheme)
+
+        self.destroy()
 
 def main(start="mainwin"):
     global SETTINGS
@@ -1715,10 +1755,6 @@ MicroBit uBit;
         import traceback
         print traceback.print_exc()
         sys.exit(1)
-
-    #sd=SettingsDialog()
-    #sd.run()
-    #sd.destroy()
 
 
     if start == "mainwin":
