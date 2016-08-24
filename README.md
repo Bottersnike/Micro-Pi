@@ -69,3 +69,6 @@ is by just letting people know about Micro:Pi and getting it out.
 - Lancaster University for the microbit-dal runtime that this entire project is built upon
 - Joe Finney from Lancaster Uni. for helping me when I was facing problems settings up yotta on my pi
 - The entire Raspberry Pi Forums community for answering all my questions
+
+
+The words "BBC" and "Micro:Bit" and the BBC Micro:Bit logo are all trademarks of the BBC and I lay no claim to them.
