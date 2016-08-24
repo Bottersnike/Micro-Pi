@@ -58,7 +58,7 @@ uBitFound = False
 mbedBuilding = False
 mbedUploading = False
 pipes = None
-WORKINGDIR = os.getcwd()
+WORKINGDIR = os.path.dirname(os.path.realpath(__file__))
 
 def printError():
     data = ''
@@ -191,12 +191,12 @@ def uBitPoller():
             uBitFound = os.path.exists(SETTINGS['mbitLocation'])
             if not (uBitUploading and uBitFound):
                 if uBitFound and not last[self][0]:
-                    gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data/uBitFound.png"))
+                    gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data", "uBitFound.png"))
                 elif last[self][0] and not uBitFound:
-                    gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data/uBitNotFound.png"))
+                    gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data", "uBitNotFound.png"))
                     uBitUploading = False
             else:
-                gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data/uBitUploading.png"))
+                gobject.idle_add(self.indicator.set_from_file, os.path.join(WORKINGDIR, "data", "uBitUploading.png"))
             last[self] = (uBitFound, uBitUploading)
         time.sleep(0.2)
 
@@ -428,7 +428,7 @@ class MainWin:
         self.fullscreenToggler = FullscreenToggler(self.window)
         self.window.connect_object('key-press-event', FullscreenToggler.toggle, self.fullscreenToggler)
         self.window.set_title('Micro:Pi')
-        self.window.set_icon_from_file('data/icon.png')
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data", "icon.png"))
         self.window.resize(750, 500)
         #if SETTINGS['theme'] == 'dark':
             #colour = gtk.gdk.color_parse(DARKCOL)
@@ -590,7 +590,7 @@ class MainWin:
         self.toolbar = gtk.HBox(False)
 
         self.indicator = gtk.Image()
-        self.indicator.set_from_file(os.path.join(WORKINGDIR, "data/uBitNotFound.png"))
+        self.indicator.set_from_file(os.path.join(WORKINGDIR, "data", "uBitNotFound.png"))
         self.indicator.show()
         self.toolbar.pack_start(self.indicator, False)
 
@@ -684,7 +684,7 @@ int main()
         dia.set_property('copyright', '(c) Nathan Taylor 2016\nThe words "BBC" and "Micro:Bit" and the BBC Micro:Bit logo are all\ntrademarks of the BBC and I lay no claim to them.')
         dia.set_property('website', 'http://bottersnike.github.io/Micro-Pi')
         dia.set_property('comments', 'A pure python IDE for the BBC:MicroBit for C++')
-        dia.set_property('license', open('data/LICENSE').read())
+        dia.set_property('license', open('data", "LICENSE').read())
         dia.show()
         dia.run()
         dia.destroy()
@@ -1185,7 +1185,7 @@ class SerialConsole:
 
         self.window = gtk.Window()
         self.window.set_title("Serial Monitor")
-        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data/icon.png"))
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data", "icon.png"))
         self.window.resize(750, 400)
         colour = gtk.gdk.color_parse(DARKCOL)
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
@@ -1361,7 +1361,7 @@ class ImageCreator:
     def __init__(self, *args, **kwargs):
         self.window = gtk.Window()
         self.window.set_title("Create An Image")
-        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data/icon.png"))
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data", "icon.png"))
         colour = gtk.gdk.color_parse(DARKCOL)
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
@@ -1376,7 +1376,7 @@ class ImageCreator:
             for x in range(5):
                 eb = gtk.EventBox()
                 i = gtk.Image()
-                i.set_from_file(os.path.join(WORKINGDIR, "data/selected.png"))
+                i.set_from_file(os.path.join(WORKINGDIR, "data", "selected.png"))
                 i.show()
                 eb.add(i)
                 eb.hide()
@@ -1385,7 +1385,7 @@ class ImageCreator:
 
                 eb2 = gtk.EventBox()
                 i2 = gtk.Image()
-                i2.set_from_file(os.path.join(WORKINGDIR, "data/unselected.png"))
+                i2.set_from_file(os.path.join(WORKINGDIR, "data", "unselected.png"))
                 i2.show()
                 eb2.add(i2)
                 eb2.show()
@@ -1468,20 +1468,20 @@ class FullscreenToggler(object):
 
 class SplashScreen:
     def __init__(self):
-        imageLoc = random.choice(os.listdir(os.path.join(WORKINGDIR, "data/splashScreens")))
-        imageSize = self.get_image_size(open(os.path.join(WORKINGDIR, "data/splashScreens", imageLoc), 'rb').read())
+        imageLoc = random.choice(os.listdir(os.path.join(WORKINGDIR, "data", "splashScreens")))
+        imageSize = self.get_image_size(open(os.path.join(WORKINGDIR, "data", "splashScreens", imageLoc), 'rb').read())
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_decorated(False)
         self.window.set_title("Micro:Pi")
-        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data/icon.png"))
+        self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data", "icon.png"))
         self.window.set_size_request(imageSize[0], -1)
         self.window.set_position(gtk.WIN_POS_CENTER)
         main_vbox = gtk.VBox(False, 1)
         self.window.add(main_vbox)
         hbox = gtk.HBox(False, 0)
         self.img = gtk.Image()
-        self.img.set_from_file(os.path.join(WORKINGDIR, "data/splashScreens", imageLoc))
+        self.img.set_from_file(os.path.join(WORKINGDIR, "data", "splashScreens", imageLoc))
         main_vbox.pack_start(self.img, True, True)
         self.lbl = gtk.Label('')
         font = pango.FontDescription("Monospace 7")
