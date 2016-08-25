@@ -22,6 +22,7 @@ run. They are as follows:
     (Be sure to check PyGtkSourceView2 2.10.1 in the installation window)
 - yotta [https://mbed-media.mbed.com/.../yotta_install_v023.exe](https://mbed-media.mbed.com/filer_public/2f/0b/2f0b924c-1fac-4907-989b-f2afe3f5785e/yotta_install_v023.exe)
 - gcc-arm-none-eabi [https://launchpad.net/.../gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe](https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q2-update/+download/gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe)
+
 Now you need to add the location where you installed yotta (C:\yotta by
 default) and the \bin directory of you gcc-arm-none-eabi installation to
 your global path. Instructions for adding to you path can be found at
