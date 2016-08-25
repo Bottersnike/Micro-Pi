@@ -37,7 +37,7 @@ d += [os.path.join(dp, f) for dp, dn, fn in os.walk("docs") for f in fn]
 os.chdir("..")
 
 setup(name="MicroPi",
-      version="0.4.4",
+      version="0.9.7",
       description="A BBC Micro:Bit IDE",
       author="Nathan Taylor",
       author_email="bottersnike237@gmail.com",
