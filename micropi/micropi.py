@@ -46,6 +46,7 @@ import errorParser
 import json
 import sys
 import shutil
+import fnmatch
 
 SENDIMAGE = False
 
@@ -331,6 +332,20 @@ def serialPoller(self):
 def loadSettings():
     return json.load(open(configLocation))
 
+def loadConfig(path):
+    d = open(path).read()
+    data = {}
+    for line in d.split('\n'):
+        if line:
+            a, b = line.split('=')
+            a = a.strip()
+            b = b.strip()
+            if a not in data:
+                data[a] = b
+            else:
+                data[a] += '\n' + b
+    return data
+
 def saveSettings():
     json.dump(SETTINGS, open(configLocation, 'w'),
               sort_keys=True, indent=4, separators=(',', ': '))
@@ -422,7 +437,10 @@ class MainWin:
         mgr = gtkSourceView.style_scheme_manager_get_default()
         self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
         self.language_manager = gtkSourceView.language_manager_get_default()
-        self.language = self.language_manager.get_language('cpp')
+        self.languages = {}
+        for i in self.language_manager.get_language_ids():
+            self.languages[i] = self.language_manager.get_language(i)
+        self.filetypes = loadConfig(os.path.join(WORKINGDIR, "data", "filetypes.conf"))
 
         self.window = gtk.Window()
         self.fullscreenToggler = FullscreenToggler(self.window)
@@ -767,6 +785,15 @@ int main()
                 w.serialConsole.consoleBody.props.buffer.set_style_scheme(w.style_scheme)
                 w.consoleBody.props.buffer.set_style_scheme(w.style_scheme)
 
+    def getLanguage(self, title):
+        for a, b in self.filetypes.items():
+            for i in b.split(';'):
+                if fnmatch.filter([title], i):
+                    a = a.lower()
+                    if a in self.languages:
+                        return self.languages[a]
+        return None
+
     def addNotebookPage(self, title, content):
         area = gtk.ScrolledWindow()
         area.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_ALWAYS)
@@ -775,9 +802,14 @@ int main()
         txtB = gtkSourceView.Buffer()
         txtB.begin_not_undoable_action()
         txtB.set_style_scheme(self.style_scheme)
-        txtB.set_language(self.language)
+
+        language = self.getLanguage(title)
+
         txtB.set_highlight_matching_brackets(True)
-        txtB.set_highlight_syntax(True)
+        if language is not None:
+            txtB.set_highlight_syntax(True)
+            txtB.set_language(language)
+
         txtB.set_text(content)
         txtB.place_cursor(txtB.get_start_iter())
         txtB.set_modified(False)
