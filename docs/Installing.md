@@ -9,7 +9,9 @@ sudo ./install.sh --online
 ```
 This will download the rest of the files and then install them. Your other
 option is to download all of the files (`git clone https://github.com/Bottersnike/Micro-Pi`)
-and then just run `sudo ./install.sh`
+and then just run `sudo ./install.sh`. Micro:Pi can now be run using the
+command `micropi` and the serial monitor can be started with the command
+`micropi-serial`.
 ##Installing manually
 Installing manually is a bit more of a hastle, but still isn't too bad.
 ###Dependancys
@@ -26,8 +28,8 @@ your global path. Instructions for adding to you path can be found at
 [http://yottadocs.mbed.com/#windows-path](http://yottadocs.mbed.com/#windows-path).
 If you want you can also remove the "Run Yotta" shortcut from your
 desktop as you don't need it.
-Now Micro:Pi can be started using the command `python -m micropi` from
-the same folder as `README.md` and `install.sh`. If you wish to install
-Micro:Pi as such that it can be started from the terminal anywhere, then
-you will have to follow instructions for installing python modules. A `setup.py`
-script is planned to automate the final step.
+####Installing
+Now open a terminal in the same folder as `README.md` and `setup.py` and
+run `python setup.py install`. This will install Micro:Pi and you are
+now able to start Micro:Pi from the terminal with the command `micropi`
+and you can start the serial monitor with `micropi-serial`.
