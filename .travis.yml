@@ -7,6 +7,6 @@ before_install:
   - "sudo apt-get update"
 install:
   - "pip install -r requirements.txt"
-  - "sudo sudo apt-get install -y --force-yes srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev libssl-dev"
+  - "sudo sudo apt-get install -y --force-yes srecord python python-pip python-gtk python-gobject cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev libssl-dev"
 # command to run tests
 script: nosetests
