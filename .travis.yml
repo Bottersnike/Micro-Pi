@@ -2,7 +2,7 @@ language: python
 python:
   - "2.7"
 # command to install dependencies
-before_install "sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded; sudo apt-get update"
+before_install: "sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded; sudo apt-get update"
 install: "pip install -r requirements.txt; sudo sudo apt-get install srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev libssl-dev"
 # command to run tests
 script: nosetests
