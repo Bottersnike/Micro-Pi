@@ -91,14 +91,22 @@ def printError():
     finally:
         print data
 
-class EntryDialog(gtk.MessageDialog):
+class EntryDialog(gtk.Dialog):
     def __init__(self, *args, **kwargs):
         if 'default_value' in kwargs:
             default_value = kwargs['default_value']
             del kwargs['default_value']
         else:
             default_value = ''
+
+        query = args[-1]
+        args = args[:-1]
+
         super(EntryDialog, self).__init__(*args, **kwargs)
+
+        label = gtk.Label(query)
+        self.vbox.pack_start(label, True, True)
+
         entry = gtk.Entry()
         entry.set_text(str(default_value))
         entry.connect("activate",
@@ -329,6 +337,30 @@ def serialPoller(self):
                 pass
             time.sleep(0.1)
 
+def inlineSerialPoller(self):
+    start = True
+    def addText(self, text):
+        tb = self.serialConsoleBody.get_buffer()
+        tb.insert(tb.get_end_iter(), text)
+    while True:
+        if self.serialConnection:
+            try:
+                data = self.serialConnection.read()
+                d2 = ''
+                for i in data:
+                    if i in string.printable:
+                        d2 += i
+                gobject.idle_add(addText, self, d2)
+            except:
+                pass
+        else:
+            try:
+                self.serialConnection = serial.serial_for_url(self.serialLocation)
+                self.serialConnection.baudrate = self.baudrate
+            except:
+                pass
+            time.sleep(0.1)
+
 def loadSettings():
     return json.load(open(configLocation))
 
@@ -431,6 +463,8 @@ class NBSR:
 class UnexpectedEndOfStream(BaseException):
     pass
 
+
+
 class MainWin:
     def __init__(self, fileData=None):
         self.active = True
@@ -448,25 +482,42 @@ class MainWin:
         self.window.set_title('Micro:Pi')
         self.window.set_icon_from_file(os.path.join(WORKINGDIR, "data", "icon.png"))
         self.window.resize(750, 500)
-        #if SETTINGS['theme'] == 'dark':
-            #colour = gtk.gdk.color_parse(DARKCOL)
-        #else:
-            #colour = gtk.gdk.color_parse(LIGHTCOL)
-        #self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
         self.window.connect("delete_event", self.destroy)
 
         self.serialConsole = SerialConsole()
 
-        self.table = gtk.Table(5, 1, False)
-        self.table.show()
-        self.window.add(self.table)
+        self.baudrate = 115200
+        self.ports = list(list_ports.grep(''))
+        self.serialLocation =  None
+        self.serialConnection = None
+        if self.serialLocation is not None:
+            self.serialConnection.baudrate = self.baudrate
+
+        thread = Thread(target=inlineSerialPoller, args=(self,))
+        thread.daemon = True
+        thread.start()
+
+
+        vbox = gtk.VBox()
+        self.window.add(vbox)
 
         self.tabWidth = 4
         self.autoIndent = True
         self.lineNumbers = True
 
         self.saveLocation = ''
+
+        self.modified = False
+
+        self.openFiles = []
+
+        if fileData is None:
+            self.files = self.loadFilesFromFile(os.path.join(WORKINGDIR, "data", "default.mpi"))
+        else:
+            self.files = fileData
+
+        ### START MENU ###
 
         def loadEXPMen(path):
             men = []
@@ -483,8 +534,6 @@ class MainWin:
                     men.append((i, loadEXPMen(os.path.join(path, i))))
             return men
 
-        #exampleMenu = [(i[:-(len(SETTINGS['fileExtention'])+1)] if i[-(len(SETTINGS['fileExtention'])+1):] == '.'+SETTINGS['fileExtention'] else i, (self.loadExample, '', '', i))
-                   #for i in os.listdir('examples')]
         exampleMenu = loadEXPMen(os.path.join(WORKINGDIR, "examples"))
 
         menuData = [
@@ -601,52 +650,105 @@ class MainWin:
             return np
 
         self.menu = loadMenu(menuData)
-        self.table.attach(self.menu, 0, 1, 0, 1, yoptions = 0)
+        #self.table.attach(self.menu, 0, 1, 0, 1, yoptions = 0)
+        vbox.pack_start(self.menu, False, False)
         self.menu.show()
 
-        tbW = gtk.VBox(False)
-        self.toolbar = gtk.HBox(False)
+        ### END MENU ###
+
+        ### START TOOLBAR ###
+
+        self.toolbar = gtk.HBox()
 
         self.indicator = gtk.Image()
         self.indicator.set_from_file(os.path.join(WORKINGDIR, "data", "uBitNotFound.png"))
-        self.indicator.show()
-        self.toolbar.pack_start(self.indicator, False)
+        self.toolbar.pack_start(self.indicator, False, False)
+
+        vbox.pack_start(self.toolbar, False, False)
+
+        ### END TOOLBAR ###
+
+        ### START WINDOW BODY ###
+
+        paned1 = gtk.HPaned()
 
 
-        self.toolbar.show()
-        tbW.pack_start(self.toolbar, True, True, 0)
-        tbW.show()
-        self.table.attach(tbW, 0, 5, 1, 2, gtk.FILL, gtk.FILL)
 
-        self.notebook = gtk.Notebook()
-        #self.table.attach(self.notebook, 0, 1, 2, 4)
-        self.notebook.show()
-        if not fileData:
-            fileData = [('main.cpp', """#include "MicroBit.h"
+        folderIcon = gtk.Image().render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_MENU)
+        fileIcon = gtk.Image().render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_MENU)
 
-MicroBit uBit;
+        self.treeStore = gtk.TreeStore(gtk.gdk.Pixbuf, str, bool)
 
-int main()
-{
-    uBit.init();
+        # Load files
 
-    while (1)
-    {
+        def load(dic, parent=None):
+            for i, j in dic.items():
+                isFile = j[0]
+                if isFile:
+                    self.treeStore.append(parent, [fileIcon, i, True])
+                else:
+                    p = self.treeStore.append(parent, [folderIcon, i, False])
+                    load(j[1], p)
+        load(self.files)
 
-    }
-}
-""")]
-        elif type(fileData) == dict:
-            fd = []
-            for i in fileData:
-                fd.append((i, fileData[i]))
-            fileData = fd
-        for i in fileData:
-            self.addNotebookPage(*i)
+        treeViewScroll = gtk.ScrolledWindow()
+        treeViewScroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.treeView = gtk.TreeView(self.treeStore)
+        self.treeView.connect('row-activated', self.openInternalFile)
+        self.treeView.connect('button-press-event', self.onTreeviewButtonPressEvent)
+        self.tvMenuOn = []
 
-        self.consoleFrame = gtk.ScrolledWindow()
-        self.consoleFrame.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_ALWAYS)
-        self.consoleFrame.show()
+        self.filepopup = gtk.Menu()
+        for i in ["Open", "Rename", "Delete"]:
+            menu_items = gtk.MenuItem(i)
+            self.filepopup.append(menu_items)
+            menu_items.connect("activate", self.onFilePopup, i)
+            menu_items.show()
+        self.dirpopup = gtk.Menu()
+        for i in ["New File", "New Folder", "Rename", "Delete"]:
+            menu_items = gtk.MenuItem(i)
+            self.dirpopup.append(menu_items)
+            menu_items.connect("activate", self.onFolderPopup, i)
+            menu_items.show()
+        self.outpopup = gtk.Menu()
+        for i in ["New File", "New Folder"]:
+            menu_items = gtk.MenuItem(i)
+            self.outpopup.append(menu_items)
+            menu_items.connect("activate", self.onOutPopup, i)
+            menu_items.show()
+
+        (COL_PIXBUF, COL_STRING) = range(2)
+
+        column = gtk.TreeViewColumn()
+        column.set_title("Files")
+        self.treeView.append_column(column)
+
+        renderer = gtk.CellRendererPixbuf()  # Icon renderer
+        column.pack_start(renderer, expand=False)
+        column.add_attribute(renderer, 'pixbuf', COL_PIXBUF)
+
+        renderer = gtk.CellRendererText()  # Text renderer
+        font = pango.FontDescription('10') # Change font size
+        renderer.set_property('font-desc', font) # Apply new font
+        column.pack_start(renderer, expand=True)
+        column.add_attribute(renderer, 'text', COL_STRING)
+
+        self.treeView.set_size_request(150, 0)
+        treeViewScroll.add(self.treeView)
+        paned1.pack1(treeViewScroll, False, False)
+
+        paned2 = gtk.VPaned()
+
+        self.notebook = gtk.Notebook() # File storage notebook
+        self.notebook.set_scrollable(True)
+
+        paned2.pack1(self.notebook, True, True)
+
+
+        thingsNotebook = gtk.Notebook()
+
+        consoleScroll = gtk.ScrolledWindow()
+        consoleScroll.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_ALWAYS)
 
         txtB = gtkSourceView.Buffer()
         txtB.set_style_scheme(self.style_scheme)
@@ -656,18 +758,98 @@ int main()
 
         self.consoleBody = SourceView(txtB)
         self.consoleBody.modify_font(pango.FontDescription('Monospace 10'))
-        self.consoleBody.show()
-        self.consoleFrame.add(self.consoleBody)
         self.consoleBody.set_editable(False)
-        #self.table.attach(self.consoleFrame, 0, 1, 4, 5)
 
-        self.bodyPaned = gtk.VPaned()
-        self.bodyPaned.pack1(self.notebook, True, True)
-        self.bodyPaned.pack2(self.consoleFrame, False, True)
-        self.table.attach(self.bodyPaned, 0, 1, 2, 5)
-        self.bodyPaned.show()
+        consoleScroll.add(self.consoleBody)
 
-        self.setSaved()
+        img = gtk.Image()
+        img.set_from_icon_name(gtk.STOCK_EXECUTE, 16)
+        thingsNotebook.append_page(consoleScroll, img)
+
+
+
+        serialVbox = gtk.VBox()
+
+        serialConsoleFrame = gtk.ScrolledWindow()
+        serialConsoleFrame.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_ALWAYS)
+
+        txtB2 = gtkSourceView.Buffer()
+        txtB2.set_style_scheme(self.style_scheme)
+        txtB2.set_highlight_matching_brackets(False)
+        txtB2.set_highlight_syntax(False)
+        txtB2.place_cursor(txtB2.get_start_iter())
+
+        self.serialConsoleBody = SourceView(txtB2)
+        self.serialConsoleBody.modify_font(pango.FontDescription("Monospace 10"))
+        serialConsoleFrame.add(self.serialConsoleBody)
+        self.serialConsoleBody.set_editable(False)
+        serialVbox.pack_start(serialConsoleFrame, 2)
+
+        serialEntryHBox = gtk.HBox()
+        self.serialEntry = gtk.Entry()
+        serialEntryHBox.pack_start(self.serialEntry, True, True, 2)
+        self.serialEntry.connect("activate", self.send)
+        sendButton = gtk.Button("Send")
+        serialEntryHBox.pack_start(sendButton, False, False, 2)
+        sendButton.connect("clicked", self.send)
+
+        serialVbox.pack_start(serialEntryHBox, False, False, 2)
+
+        serialHbox = gtk.HBox()
+        gtkbaudrate = gtk.combo_box_new_text()
+        gtkbaudrate.append_text("300")
+        gtkbaudrate.append_text("1200")
+        gtkbaudrate.append_text("2400")
+        gtkbaudrate.append_text("4800")
+        gtkbaudrate.append_text("9600")
+        gtkbaudrate.append_text("19200")
+        gtkbaudrate.append_text("38400")
+        gtkbaudrate.append_text("57600")
+        gtkbaudrate.append_text("115200")
+        gtkbaudrate.set_active(8)
+        gtkbaudrate.connect("changed", self.brtchange)
+        serialHbox.pack_start(gtkbaudrate, False, False)
+
+        serialRefreshButton = gtk.Button("Refresh")
+        serialRefreshButton.connect("clicked", self.refresh)
+        serialHbox.pack_start(serialRefreshButton, True, False)
+
+        serialClearButton = gtk.Button("Clear")
+        serialClearButton.connect("clicked", self.clear)
+        serialHbox.pack_start(serialClearButton, True, False)
+
+        #connHBox = gtk.HBox()
+
+        self.gtkserialloc = gtk.combo_box_new_text()
+        for i in self.ports:
+            self.gtkserialloc.append_text(i[0])
+        self.gtkserialloc.set_active(0)
+
+        serialHbox.pack_start(self.gtkserialloc, False, False)
+
+        serialConnectButton = gtk.Button("Connect")
+        serialConnectButton.connect("clicked", self.connectToPort)
+        serialHbox.pack_start(serialConnectButton, False, False)
+
+        serialVbox.pack_start(serialHbox, False, False, 0)
+
+
+        img = gtk.Image()
+        img.set_from_icon_name(gtk.STOCK_DISCONNECT, 16)
+        thingsNotebook.append_page(serialVbox, img)
+
+
+        thingsNotebook.set_tab_pos(gtk.POS_LEFT)
+
+        paned2.pack2(thingsNotebook, False, True)
+
+        paned1.pack2(paned2, True, True)
+
+        vbox.pack_start(paned1)
+
+        ### END WINDOW BODY ###
+
+        ### START WINDOW COLOURING ###
 
         self.setTheme(None, SETTINGS['theme'])
 
@@ -678,19 +860,275 @@ int main()
 
         self.window.modify_bg(gtk.STATE_NORMAL, colour)
 
-        mgr = gtkSourceView.style_scheme_manager_get_default()
-        self.style_scheme = mgr.get_scheme('tango' if SETTINGS['theme']=='light' else 'oblivion')
-        for f in self.notebook:
-            f.get_child().props.buffer.set_style_scheme(self.style_scheme)
-        self.serialConsole.window.modify_bg(gtk.STATE_NORMAL, colour)
-        if SENDIMAGE: self.serialConsole.imageCreator.window.modify_bg(gtk.STATE_NORMAL, colour)
-        self.serialConsole.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
-        self.consoleBody.props.buffer.set_style_scheme(self.style_scheme)
+        ### END WINDOW COLOURING ###
 
-        self.window.show()
+        self.window.show_all()
 
-        if len(sys.argv) > 1:
-            self.forceOpenFileByFN(sys.argv[1])
+        if len(sys.argv) > 1: # Has the user requested to open a file from the command line?
+            self.forceOpenFileByFN(sys.argv[1]) # If so, load it
+
+    def refreshTree(self):
+        folderIcon = gtk.Image().render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_MENU)
+        fileIcon = gtk.Image().render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_MENU)
+
+        def load(dic, parent=None):
+            for i, j in dic.items():
+                isFile = j[0]
+                if isFile:
+                    self.treeStore.append(parent, [fileIcon, i, True])
+                else:
+                    p = self.treeStore.append(parent, [folderIcon, i, False])
+                    load(j[1], p)
+        self.treeStore.clear()
+        load(self.files)
+
+    def onFilePopup(self, *args):
+        label = args[1]
+        listP = self.tvMenuOn
+        fullP = "/".join(listP) + "/"
+        filename = listP[-1]
+        if label == "Open":
+            if fullP not in self.openFiles:
+                d = self.files
+                for i in listP:
+                    d = d[i][1]
+                self.addNotebookPage(filename, d, fullP)
+                self.openFiles.append(fullP)
+            else:
+                for i in range(self.notebook.get_n_pages()):
+                    page = self.notebook.get_nth_page(i)
+                    fn = self.notebook.get_tab_label(page).get_tooltip_text()
+                    if fn == fullP:
+                        self.notebook.set_current_page(i)
+        elif label == "Rename":
+            name = self.askQ("New Name", prompt=filename, ok="Rename")
+            if name is not None:
+                nfp = listP[:-1]
+                nfp.append(name)
+                nfp = "/".join(nfp) + "/"
+
+                if fullP in self.openFiles:
+                    self.openFiles.remove(fullP)
+                    self.openFiles.append(nfp)
+
+                for i in range(self.notebook.get_n_pages()):
+                    page = self.notebook.get_nth_page(i)
+                    fn = self.notebook.get_tab_label(page).get_tooltip_text()
+                    if fn == fullP:
+                        lab = self.notebook.get_tab_label(page)
+                        lab.children()[0].set_label(name)
+                        lab.set_tooltip_text(nfp)
+
+                d = self.files
+                for i in listP[:-1]:
+                    d = d[i][1]
+                data = d[filename]
+                del d[filename]
+                d[name] = data
+
+                self.refreshTree()
+        elif label == "Delete":
+            rem = self.ask("Are you sure you want to delete %s?" % filename)
+            if rem:
+                if fullP in self.openFiles:
+                    self.openFiles.remove(fullP)
+
+                toRemove = None
+                for i in range(self.notebook.get_n_pages()):
+                    page = self.notebook.get_nth_page(i)
+                    fn = self.notebook.get_tab_label(page).get_tooltip_text()
+                    if fn == fullP:
+                        toRemove = i
+                if toRemove is not None:
+                    self.notebook.remove_page(toRemove)
+
+                d = self.files
+                for i in listP[:-1]:
+                    d = d[i][1]
+                del d[filename]
+
+                self.refreshTree()
+
+    def onFolderPopup(self, *args):
+        label = args[1]
+        listP = self.tvMenuOn
+        fullP = "/".join(listP) + "/"
+        filename = listP[-1]
+        if label == "Rename":
+            name = self.askQ("New Name", prompt=filename, ok="Rename")
+            if name is not None:
+                nfp = listP[:-1]
+                nfp.append(name)
+                nfp = "/".join(nfp) + "/"
+
+                for i in list(self.openFiles):
+                    if i.startswith(fullP):
+                        np = i[len(fullP):]
+                        np = nfp + np
+
+                        print i, np
+
+                        self.openFiles.remove(i)
+                        self.openFiles.append(np)
+
+                for i in range(self.notebook.get_n_pages()):
+                    page = self.notebook.get_nth_page(i)
+                    fn = self.notebook.get_tab_label(page).get_tooltip_text()
+                    if fn.startswith(fullP):
+                        fn = fn[len(fullP):]
+                        fn = nfp + fn
+
+                        lab = self.notebook.get_tab_label(page)
+                        lab.set_tooltip_text(fn)
+
+                d = self.files
+                for i in listP[:-1]:
+                    d = d[i][1]
+                data = d[filename]
+                del d[filename]
+                d[name] = data
+
+                self.refreshTree()
+        elif label == "Delete":
+            rem = self.ask("Are you sure you want to delete %s?" % filename)
+            if rem:
+                toRemove = None
+                loop = True
+                while loop:
+                    for i in range(self.notebook.get_n_pages()):
+                        page = self.notebook.get_nth_page(i)
+                        fn = self.notebook.get_tab_label(page).get_tooltip_text()
+                        if fn.startswith(fullP):
+                            toRemove = i
+                            if fn in self.openFiles:
+                                self.openFiles.remove(fn)
+                    if toRemove is not None:
+                        self.notebook.remove_page(toRemove)
+                        toRemove = None
+                    else:
+                        loop = False
+
+                d = self.files
+                for i in listP[:-1]:
+                    d = d[i][1]
+                del d[filename]
+
+                self.refreshTree()
+        elif label == "New File":
+            name = self.askQ("New Name", ok="Create")
+            if name is not None:
+                d = self.files
+                for i in listP:
+                    d = d[i][1]
+                d[name] = [True, ""]
+
+                self.refreshTree()
+        elif label == "New Folder":
+            name = self.askQ("New Name", ok="Create")
+            if name is not None:
+                d = self.files
+                for i in listP:
+                    d = d[i][1]
+                d[name] = [False, {}]
+
+                self.refreshTree()
+
+    def onOutPopup(self, *args):
+        label = args[1]
+
+        if label == "New File":
+            name = self.askQ("New Name", ok="Create")
+            if name is not None:
+                d = self.files
+                d[name] = [True, ""]
+
+                self.refreshTree()
+        elif label == "New Folder":
+            name = self.askQ("New Name", ok="Create")
+            if name is not None:
+                d = self.files
+                d[name] = [False, {}]
+
+                self.refreshTree()
+
+    def loadFilesFromDir(self, d):
+        """
+        Loads files from a directory into a format that Micro:Pi recognises
+        """
+        o = {}
+        for i in os.listdir(d):
+            p = os.path.join(d, i)
+            if os.path.isdir(p):
+                o[(i)] = [False, self.loadFilesFromDir(p)]
+            else:
+                o[(i)] = [True, open(p).read()]
+        return o
+
+    def loadFilesFromFile(self, f):
+        """
+        Loads files from a file into a format that Micro:Pi recognises
+        """
+        tf = tarfile.open(f)
+        tmp = tempfile.mkdtemp()
+        tf.extractall(tmp)
+
+        data = self.loadFilesFromDir(tmp)
+
+        shutil.rmtree(tmp)
+
+        return data
+
+    def saveInternalOpenFiles(self):
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            fn = self.notebook.get_tab_label(page).get_tooltip_text()
+            fn = fn.split("/")
+            while "" in fn:
+                fn.remove("")
+            d = self.files
+            for i in fn:
+                if i != fn[-1]:
+                    d = d[i][1]
+
+            tb = page.get_child().get_buffer()
+            txt = tb.get_text(*tb.get_bounds())
+
+            d[i][1] = txt
+
+    def openInternalFile(self, treeview, path, column):
+        model = self.treeView.get_model()
+
+        _iter = model.get_iter(path)
+        filename = model.get_value(_iter, 1)
+        isFile = model.get_value(_iter, 2)
+
+        fullP = ""
+        listP = []
+        p = path
+        while p:
+            _iter = model.get_iter(p)
+            fn = model.get_value(_iter, 1)
+            p = p[:-1]
+            fullP = fn + "/" + fullP
+            listP = [fn] + listP
+
+        if not isFile:
+            if not self.treeView.row_expanded(path):
+                self.treeView.expand_row(path, False)
+            else:
+                self.treeView.collapse_row(path)
+        elif fullP not in self.openFiles:
+            d = self.files
+            for i in listP:
+                d = d[i][1]
+            self.addNotebookPage(filename, d, fullP)
+            self.openFiles.append(fullP)
+        else:
+            for i in range(self.notebook.get_n_pages()):
+                page = self.notebook.get_nth_page(i)
+                fn = self.notebook.get_tab_label(page).get_tooltip_text()
+                if fn == fullP:
+                    self.notebook.set_current_page(i)
 
     def website(self, *args):
         webbrowser.open("http://bottersnike.github.io/Micro-Pi")
@@ -794,7 +1232,7 @@ int main()
                         return self.languages[a]
         return None
 
-    def addNotebookPage(self, title, content):
+    def addNotebookPage(self, title, content, path):
         area = gtk.ScrolledWindow()
         area.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_ALWAYS)
         area.show()
@@ -825,20 +1263,31 @@ int main()
         text.show()
         text.modify_font(pango.FontDescription('Monospace 10'))
         area.add(text)
+
+
         top = gtk.HBox()
+
         title = gtk.Label(title)
         title.show()
+        top.set_tooltip_text(path)
+
+
         top.pack_start(title, True, True, 0)
         butt = gtk.Button()
         img = gtk.Image()
-        img.set_from_stock(gtk.STOCK_CLOSE, 1)
+        img.set_from_stock(gtk.STOCK_CLOSE, gtk.ICON_SIZE_MENU)
         img.show()
         butt.set_image(img)
         butt.connect_object("clicked", self.closePage, area)
-        top.pack_end(butt, True, True, 0)
+        top.pack_end(butt, False, False, 0)
+
         butt.show()
         top.show()
-        self.notebook.append_page(area, top)
+
+        self.notebook.insert_page(area, top, 0)
+
+        pages = self.notebook.get_n_pages()
+        self.notebook.set_current_page(0)
 
     def openFile(self, *args):
         if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
@@ -858,19 +1307,21 @@ int main()
             resp = fn.run()
             if resp == gtk.RESPONSE_OK:
                 try:
-                    text = open(fn.get_filename()).read()
-                    try:
-                        d = text.replace("\n", "")
-                        d = base64.b64decode(d)
-                        data = pickle.loads(d)
-                    except:
-                        data = pickle.loads(text)
+                    #text = open(fn.get_filename()).read()
+                    #try:
+                        #d = text.replace("\n", "")
+                        #d = base64.b64decode(d)
+                        #data = pickle.loads(d)
+                    #except:
+                        #data = pickle.loads(text)
+                    data = self.loadFilesFromFile(fn.get_filename())
+
                     mw = MainWin(data)
                     yes = True
                     mw.saveLocation = fn.get_filename()
                     mw.setSaved()
                     OPENWINDOWS.append(mw)
-                except:
+                except Exception as e:
                     yes = False
             fn.destroy()
             if resp == gtk.RESPONSE_OK and not yes:
@@ -879,17 +1330,8 @@ int main()
     def forceOpenFileByFN(self, fn, *args):
         yes = True
         try:
-            try:
-                text = open(fn).read()
-            except:
-                fn = os.path.join(WORKINGDIR, fn)
-                text = open(fn).read()
-            try:
-                d = text.replace("\n", "")
-                d = base64.b64decode(d)
-                data = pickle.loads(d)
-            except:
-                data = pickle.loads(text)
+            data = self.loadFilesFromFile(fn)
+
             sys.argv = [sys.argv[0]]
             mw = MainWin(data)
             mw.saveLocation = fn
@@ -897,27 +1339,80 @@ int main()
             OPENWINDOWS.append(mw)
             self.destroy()
             yes = True
-        except:
+        except Exception as e:
             yes = False
         if not yes:
             self.message("File is not a Micro:Pi File")
 
     def save(self, *args):
-        files = {}
-        for f in self.notebook:
-            fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
-            tb = f.get_child().get_buffer()
-            txt = tb.get_text(*tb.get_bounds())
-            files[fn] = txt
-        data = base64.b64encode(pickle.dumps(files))
-        data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
+        self.saveInternalOpenFiles()
+
         if self.saveLocation:
-            open(self.saveLocation, 'w').write(data)
+
+            _dir = tempfile.mkdtemp()
+
+            def f(d, p):
+                for i, j in d.items():
+                    if j[0]:
+                        open(os.path.join(p, i), "w").write(j[1])
+                    else:
+                        os.mkdir(os.path.join(p, i))
+                        f(j[1], os.path.join(p, i))
+            f(self.files, _dir)
+
+            with tarfile.open(self.saveLocation + ".tar.gz", "w:gz") as tar:
+                for i in os.listdir(_dir):
+                    p = os.path.join(_dir, i)
+                    tar.add(p, arcname=os.path.basename(p))
+
+            shutil.rmtree(_dir)
+            os.rename(self.saveLocation + ".tar.gz", self.saveLocation)
+
             self.setSaved()
         else:
             self.saveAs()
 
+    def onTreeviewButtonPressEvent(self, treeview, event):
+        if event.button == 3:
+            x = int(event.x)
+            y = int(event.y)
+            time = event.time
+            pthinfo = treeview.get_path_at_pos(x, y)
+            if pthinfo is not None:
+                path, col, cellx, celly = pthinfo
+
+
+
+                model = self.treeView.get_model()
+
+                _iter = model.get_iter(path)
+                filename = model.get_value(_iter, 1)
+                isFile = model.get_value(_iter, 2)
+
+                listP = []
+                p = path
+                while p:
+                    _iter = model.get_iter(p)
+                    fn = model.get_value(_iter, 1)
+                    p = p[:-1]
+                    listP = [fn] + listP
+
+                self.tvMenuOn = listP
+
+                treeview.grab_focus()
+                treeview.set_cursor(path, col, 0)
+
+                if isFile:
+                    self.filepopup.popup(None, None, None, event.button, time)
+                else:
+                    self.dirpopup.popup(None, None, None, event.button, time)
+            else:
+                self.outpopup.popup(None, None, None, event.button, time)
+            return True
+
     def saveAs(self, *args):
+        self.saveInternalOpenFiles()
+
         fn = gtk.FileChooserDialog(title="Save File As",
                                    action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                    buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
@@ -933,22 +1428,23 @@ int main()
 
         resp = fn.run()
 
-        files = []
-        for f in self.notebook:
-            fin = self.notebook.get_tab_label(f).get_children()[0].get_label()
-            tb = f.get_child().get_buffer()
-            txt = tb.get_text(*tb.get_bounds())
-            files.append([fin, txt])
-        data = base64.b64encode(pickle.dumps(files))
-        data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
+        #files = []
+        #for f in self.notebook:
+            #fin = self.notebook.get_tab_label(f).get_children()[0].get_label()
+            #tb = f.get_child().get_buffer()
+            #txt = tb.get_text(*tb.get_bounds())
+            #files.append([fin, txt])
+        #data = base64.b64encode(pickle.dumps(files))
+        #data = "".join(data[i:i+64]+"\n" for i in xrange(0, len(data), 64))
 
         if resp == gtk.RESPONSE_OK:
             fp = fn.get_filename()
             if fp[-(len(SETTINGS["fileExtention"])+1):] != "." + SETTINGS["fileExtention"]:
                 fp += "." + SETTINGS["fileExtention"]
-            open(fp, 'w').write(data)
-            self.setSaved()
+            #open(fp, 'w').write(data)
             self.saveLocation = fp
+            self.save()
+            self.setSaved()
         fn.destroy()
 
     def destroy(self, *args):
@@ -959,6 +1455,7 @@ int main()
             for i in OPENWINDOWS:
                 if i.active:
                     kill = False
+            OPENWINDOWS.remove(self)
             if kill:
                 gtk.main_quit()
             return False
@@ -978,11 +1475,11 @@ int main()
         dia.destroy()
         return rtn == gtk.RESPONSE_YES
 
-    def askQ(self, query, prompt=None):
+    def askQ(self, query, prompt=None, title="", ok="Ok"):
         if prompt:
-            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query, default_value=prompt)
+            dia = EntryDialog(title, self.window, gtk.DIALOG_DESTROY_WITH_PARENT, (ok, gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL), query, default_value=prompt)
         else:
-            dia = EntryDialog(self.window, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_QUESTION, gtk.BUTTONS_OK_CANCEL, query)
+            dia = EntryDialog(title, self.window, gtk.DIALOG_DESTROY_WITH_PARENT, (ok, gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL), query)
         dia.show()
         rtn=dia.run()
         dia.destroy()
@@ -1008,15 +1505,7 @@ int main()
 
     def newProject(self, *args):
         #if (not self.getModified()) or self.ask("There are unsaved files.\nContinue?"):
-        fileData = [("main.cpp", """#include "header.h"
-#include "MicroBit.h"
-
-void app_main()
-{
-
-}
-"""), ('header.h', '')]
-        mw = MainWin(fileData)
+        mw = MainWin()
         mw.saveLocation = ''
         mw.setSaved()
         OPENWINDOWS.append(mw)
@@ -1029,6 +1518,9 @@ void app_main()
                                "build/bbc-microbit-classic-gcc/source/"))
 
     def startBuild(self, *args):
+
+        self.saveInternalOpenFiles()
+
         global mbedUploading
         global mbedBuilding
         global uBitUploading
@@ -1045,12 +1537,15 @@ void app_main()
                 w.consoleBody.props.buffer = txtB
             mbedBuilding = True
             self.clearBuild()
-            for f in self.notebook:
-                fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
-                tb = f.get_child().get_buffer()
-                text = tb.get_text(*tb.get_bounds())
-                open(os.path.join(buildLocation, "source/%s" %
-                                  fn), 'w').write(text)
+
+            def f(d, p):
+                for i, j in d.items():
+                    if j[0]:
+                        open(os.path.join(p, i), "w").write(j[1])
+                    else:
+                        os.mkdir(os.path.join(p, i))
+                        f(j[1], os.path.join(p, i))
+            f(self.files, os.path.join(buildLocation, "source/"))
 
             os.chdir(buildLocation)
             os.environ["PWD"] = buildLocation
@@ -1080,6 +1575,9 @@ void app_main()
         global uBitUploading
         global uBitFound
         global pipes
+
+        self.saveInternalOpenFiles()
+
         if not (mbedUploading or mbedBuilding):
             txtB = gtkSourceView.Buffer()
             txtB.set_style_scheme(self.style_scheme)
@@ -1091,12 +1589,16 @@ void app_main()
             mbedBuilding = True
             mbedUploading = True
             self.clearBuild()
-            for f in self.notebook:
-                fn = self.notebook.get_tab_label(f).get_children()[0].get_label()
-                tb = f.get_child().get_buffer()
-                text = tb.get_text(*tb.get_bounds())
-                open(os.path.join(buildLocation, "source/%s" %
-                                  fn), 'w').write(text)
+
+
+            def f(d, p):
+                for i, j in d.items():
+                    if j[0]:
+                        open(os.path.join(p, i), "w").write(j[1])
+                    else:
+                        os.mkdir(os.path.join(p, i))
+                        f(j[1], os.path.join(p, i))
+            f(self.files, os.path.join(buildLocation, "source/"))
 
             os.chdir(buildLocation)
             os.environ["PWD"] = buildLocation
@@ -1157,11 +1659,15 @@ void app_main()
                 thread.start()
 
     def closePage(self, widget, *args):
+        self.saveInternalOpenFiles()
+
+        if self.getModified():
+            self.modified = True
+
         pn = self.notebook.page_num(widget)
-        if self.ask("Are you sure you want to delete this file?\nThis action cannot be undone!"):
-            self.notebook.remove_page(pn)
-            if self.notebook.get_n_pages() == 0:
-                self.addNotebookPage("main.cpp", '')
+        fn = self.notebook.get_tab_label(widget).get_tooltip_text()
+        self.openFiles.remove(fn)
+        self.notebook.remove_page(pn)
 
     def newPage(self, *args):
         pageName = self.askQ("File Name")
@@ -1169,11 +1675,12 @@ void app_main()
             self.addNotebookPage(pageName, '')
 
     def getModified(self):
-        return any([i.get_child().get_buffer().get_modified() for i in self.notebook])
+        return any([self.modified] + [i.get_child().get_buffer().get_modified() for i in self.notebook])
 
     def setSaved(self):
         for i in self.notebook:
             i.get_child().props.buffer.set_modified(False)
+        self.modified = True
 
     def showSettings(self, *args):
         sd=SettingsDialog()
@@ -1191,6 +1698,57 @@ void app_main()
         thread.daemon = True
         thread.start()
         gtk.main()
+
+
+
+
+    def send(self, *args):
+        if self.serialConnection:
+            self.serialConnection.write(self.entry.get_text() + '\n')
+        self.entry.set_text('')
+
+    def clear(self, *args):
+        txtB = gtkSourceView.Buffer()
+        txtB.set_style_scheme(self.style_scheme)
+        txtB.set_highlight_matching_brackets(False)
+        txtB.set_highlight_syntax(False)
+        txtB.place_cursor(txtB.get_start_iter())
+        self.consoleBody.set_buffer(txtB)
+
+    def refresh(self, *args):
+        self.ports = list(list_ports.grep(''))
+        #self.serialLocation = self.ports[0][0] if self.ports else None
+        #self.serialConnection = None if not self.serialLocation else serial.serial_for_url(self.serialLocation)
+        #if self.serialLocation is not None:
+            #self.serialConnection.baudrate = self.baudrate
+        self.gtkserialloc.get_model().clear()
+        for i in self.ports:
+            self.gtkserialloc.append_text(i[0])
+        self.gtkserialloc.set_active(0 if self.ports else -1)
+
+    def brtchange(self, widget, *args):
+        model = widget.get_model()
+        index = widget.get_active()
+        newbdrate = int(model[index][0])
+        self.baudrate = newbdrate
+        if not self.serialConnection:
+            self.serialConnection = serial.serial_for_url(self.serialLocation)
+        self.serialConnection.baudrate = newbdrate
+
+    def connectToPort(self, *args):
+        self.portchange(self.gtkserialloc)
+
+    def portchange(self, widget, *args):
+        model = widget.get_model()
+        index = widget.get_active()
+        if 0 <= index < len(model):
+            newport = model[index][0]
+            self.serialLocation = newport
+            if not self.serialConnection:
+                self.serialConnection = serial.serial_for_url(self.serialLocation)
+            self.serialConnection.port = newport
+            self.serialConnection.baudrate = self.baudrate
+
 
 class SerialConsole:
     def __init__(self, indep=False):
