@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Bottersnike/Micro-Pi.svg?branch=master)](https://travis-ci.org/Bottersnike/Micro-Pi)
 ##Summary
 Micro:Pi is a pure python IDE (Intergrated
 Development Enviroment) designed to run on any system
