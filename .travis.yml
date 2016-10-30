@@ -3,6 +3,6 @@ python:
   - "2.7"
 # command to install dependencies
 install: "pip install -r requirements.txt"
-install: "apt-get install python-gtk2 python-gtk2-dev"
+install: "sudo apt-get install python-gtk2 python-gtk2-dev"
 # command to run tests
 script: nosetests
