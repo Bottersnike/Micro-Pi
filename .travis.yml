@@ -2,6 +2,6 @@ language: python
 python:
   - "2.7"
 # command to install dependencies
-install: "pip install -r requirements.txt; sudo apt-get install python-gtk2 python-gtk2-dev python-gobject"
+install: "pip install -r requirements.txt; sudo sudo apt-get install srecord python python-pip cmake gcc-arm-none-eabi python-setuptools build-essential ninja-build python-dev libffi-dev libssl-dev"
 # command to run tests
 script: nosetests
